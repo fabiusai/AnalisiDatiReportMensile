@@ -16,7 +16,6 @@
     .controls button { background: var(--secondary); border: none; padding: 0.6rem 1.2rem; cursor: pointer; font-weight: bold; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .card { background: var(--card-bg); padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
     .card h2 { margin-top: 0; color: var(--primary); }
-    /* Stile per il nuovo selettore del canale */
     .channel-selector { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
     .channel-selector label { font-weight: bold; color: var(--text); }
     .channel-selector select { padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; background-color: #fff; }
@@ -26,6 +25,9 @@
     button.copy-btn { margin-left: 0.5rem; background: transparent; color: var(--primary); border: none; font-size: 1rem; cursor: pointer; }
     button.copy-btn:focus { outline: none; }
     button.save-table { margin: 0.5rem 0; background: var(--primary); color: #fff; border: none; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer; border-radius: 4px; }
+    /* Stile per i nuovi bottoni "Altro" e "Chiudi" */
+    .table-controls { margin-top: 1rem; display: flex; gap: 0.5rem; }
+    .table-controls button { background: var(--secondary); border: none; padding: 0.4rem 0.8rem; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 0.9rem; }
     a.link-btn { color: var(--primary); text-decoration: underline; font-weight: bold; }
     .note { font-size: 0.9rem; font-style: italic; margin-top: 1rem; }
   </style>
@@ -129,7 +131,6 @@
       const tblT2=document.createElement('table');tblT2.innerHTML='<thead><tr><th>Argomenti</th><th>Numero post</th><th>Visualizzazioni</th></tr></thead>';
       const bodyT2=document.createElement('tbody');topTop.forEach(i=>{const tr=document.createElement('tr');[i.arg,i.count,formatNumber(i.sum)].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.appendChild(createCopyBtn(v));tr.appendChild(td);});bodyT2.appendChild(tr);});tblT2.appendChild(bodyT2);topicsCard.appendChild(tblT2);report.appendChild(topicsCard);
       
-      // --- MODIFICA INIZIA QUI ---
       // Sezione interattiva per i Top Post per Canale
       const channels = [...new Set(filtered.map(r => r.Canale.trim().toLowerCase()))];
       if (channels.length > 0) {
@@ -137,7 +138,6 @@
         channelCard.className = 'card';
         channelCard.innerHTML = `<h2>Top post per Canale</h2>`;
         
-        // Contenitore per il menu a tendina
         const selectorContainer = document.createElement('div');
         selectorContainer.className = 'channel-selector';
 
@@ -148,13 +148,11 @@
         const channelSelect = document.createElement('select');
         channelSelect.id = 'channel-select';
 
-        // Opzione di default
         const defaultOption = document.createElement('option');
         defaultOption.value = '';
         defaultOption.textContent = '--- Scegli un canale ---';
         channelSelect.appendChild(defaultOption);
 
-        // Popola il menu a tendina con i canali trovati
         channels.forEach(chan => {
             const option = document.createElement('option');
             option.value = chan;
@@ -166,11 +164,9 @@
         selectorContainer.appendChild(channelSelect);
         channelCard.appendChild(selectorContainer);
 
-        // Div che conterrà il report del canale selezionato
         const channelReportContent = document.createElement('div');
         channelCard.appendChild(channelReportContent);
         
-        // Aggiunge l'event listener per gestire la selezione
         channelSelect.addEventListener('change', (e) => {
             const selectedChannel = e.target.value;
             renderChannelDetails(selectedChannel, filtered, channelReportContent);
@@ -178,25 +174,120 @@
 
         report.appendChild(channelCard);
       }
-      // --- MODIFICA FINISCE QUI ---
     }
     
-    // --- FUNZIONE AGGIUNTA ---
     // Funzione per renderizzare i dettagli di un canale specifico
     function renderChannelDetails(channel, allPosts, container) {
-        container.innerHTML = ''; // Pulisce il contenitore
-        if (!channel) return; // Se non è selezionato nessun canale, non fa nulla
+        container.innerHTML = ''; 
+        if (!channel) return; 
 
         const posts = allPosts.filter(r => r.Canale.trim().toLowerCase() === channel);
         if (!posts.length) return;
         
-        // Riutilizza la funzione createSection per generare le tabelle
         container.appendChild(createSection('Post più visualizzati', posts, 'Visualizzazioni'));
         container.appendChild(createSection('Post con più interazioni', posts, 'Interazioni'));
     }
 
-    function createSection(title,posts,metric){const sec=document.createElement('div');const h3=document.createElement('h3');h3.textContent=title;sec.appendChild(h3);const sorted=[...posts].sort((a,b)=>Number(b[metric])-Number(a[metric])).slice(0,3);const tbl=document.createElement('table');tbl.innerHTML='<thead><tr><th>Label</th><th>Argomento</th><th>Data</th><th>Copy</th><th>Visualizzazioni</th><th>Interazioni</th><th>Link</th></tr></thead>';const body=document.createElement('tbody');sorted.forEach(r=>{const tr=document.createElement('tr');const vals=[r.Label.toUpperCase(),r.Argomento,formatDate(r.Data),r.Copy,formatNumber(r.Visualizzazioni),formatNumber(r.Interazioni)];vals.forEach(v=>{const td=document.createElement('td');td.textContent=v;td.appendChild(createCopyBtn(v));tr.appendChild(td);});const tdL=document.createElement('td');const a=document.createElement('a');a.href=r.Link;a.target='_blank';a.textContent='Link';a.className='link-btn';tdL.appendChild(a);tr.appendChild(tdL);body.appendChild(tr);});tbl.appendChild(body);sec.appendChild(tbl);return sec;}
-    function createCopyBtn(val){const btn=document.createElement('button');btn.className='copy-btn';btn.textContent='⧉';btn.title='Copia';btn.addEventListener('click',()=>{navigator.clipboard.writeText(val).then(()=>{btn.textContent='✓';setTimeout(()=>btn.textContent='⧉',1000);});});return btn;}
+    // --- MODIFICA INIZIA QUI: Funzione createSection aggiornata ---
+    function createSection(title, posts, metric) {
+        const sectionContainer = document.createElement('div');
+        const h3 = document.createElement('h3');
+        h3.textContent = title;
+        sectionContainer.appendChild(h3);
+
+        const sortedPosts = [...posts].sort((a, b) => (Number(b[metric]) || 0) - (Number(a[metric]) || 0));
+        
+        const table = document.createElement('table');
+        table.innerHTML = '<thead><tr><th>Label</th><th>Argomento</th><th>Data</th><th>Copy</th><th>Visualizzazioni</th><th>Interazioni</th><th>Link</th></tr></thead>';
+        const tableBody = document.createElement('tbody');
+        table.appendChild(tableBody);
+        
+        const controlsContainer = document.createElement('div');
+        controlsContainer.className = 'table-controls';
+
+        const showMoreBtn = document.createElement('button');
+        showMoreBtn.textContent = 'Altro';
+        
+        const showLessBtn = document.createElement('button');
+        showLessBtn.textContent = 'Chiudi visualizzazione estesa';
+        showLessBtn.style.display = 'none'; // Nascosto di default
+
+        // Funzione interna per aggiornare le righe della tabella
+        function updateTableRows(count) {
+            tableBody.innerHTML = ''; // Pulisce le righe esistenti
+            const postsToShow = sortedPosts.slice(0, count);
+            postsToShow.forEach(r => {
+                const tr = document.createElement('tr');
+                const vals = [r.Label.toUpperCase(), r.Argomento, formatDate(r.Data), r.Copy, formatNumber(r.Visualizzazioni), formatNumber(r.Interazioni)];
+                vals.forEach(v => {
+                    const td = document.createElement('td');
+                    td.textContent = v;
+                    td.appendChild(createCopyBtn(v));
+                    tr.appendChild(td);
+                });
+                const tdL = document.createElement('td');
+                const a = document.createElement('a');
+                a.href = r.Link;
+                a.target = '_blank';
+                a.textContent = 'Link';
+                a.className = 'link-btn';
+                tdL.appendChild(a);
+                tr.appendChild(tdL);
+                tableBody.appendChild(tr);
+            });
+            // Mostra il pulsante "Altro" solo se ci sono più post da visualizzare
+            showMoreBtn.style.display = sortedPosts.length > count ? 'inline-block' : 'none';
+        }
+        
+        // Event listener per il pulsante "Altro"
+        showMoreBtn.addEventListener('click', () => {
+            const currentCount = tableBody.rows.length;
+            const requestedCount = prompt(`Quanti risultati vuoi visualizzare in totale? (max ${sortedPosts.length})`, sortedPosts.length);
+            if (requestedCount === null) return; // L'utente ha annullato
+            
+            const num = parseInt(requestedCount, 10);
+            if (isNaN(num) || num <= currentCount) {
+                alert(`Inserisci un numero valido e maggiore di ${currentCount}.`);
+                return;
+            }
+            
+            const finalCount = Math.min(num, sortedPosts.length);
+            updateTableRows(finalCount);
+            showMoreBtn.style.display = 'none';
+            showLessBtn.style.display = 'inline-block';
+        });
+
+        // Event listener per il pulsante "Chiudi visualizzazione estesa"
+        showLessBtn.addEventListener('click', () => {
+            updateTableRows(3);
+            showLessBtn.style.display = 'none';
+        });
+        
+        sectionContainer.appendChild(table);
+        controlsContainer.appendChild(showMoreBtn);
+        controlsContainer.appendChild(showLessBtn);
+        sectionContainer.appendChild(controlsContainer);
+
+        // Visualizzazione iniziale
+        updateTableRows(3);
+        
+        return sectionContainer;
+    }
+    // --- MODIFICA FINISCE QUI ---
+
+    function createCopyBtn(val){
+        const btn=document.createElement('button');
+        btn.className='copy-btn';
+        btn.textContent='⧉';
+        btn.title='Copia';
+        btn.addEventListener('click',()=>{
+            navigator.clipboard.writeText(val).then(()=>{
+                btn.textContent='✓';
+                setTimeout(()=>btn.textContent='⧉',1000);
+            });
+        });
+        return btn;
+    }
   </script>
 </body>
 </html>
