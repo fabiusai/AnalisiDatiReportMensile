@@ -24,7 +24,7 @@
     th { background: var(--primary); color: #fff; font-weight: normal; }
     button.copy-btn { margin-left: 0.5rem; background: transparent; color: var(--primary); border: none; font-size: 1rem; cursor: pointer; }
     button.copy-btn:focus { outline: none; }
-    button.save-table { margin: 0.5rem 0; background: var(--primary); color: #fff; border: none; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer; border-radius: 4px; }
+    button.save-table { margin: 1.5rem 0 0.5rem 0; background: var(--primary); color: #fff; border: none; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer; border-radius: 4px; }
     /* Stile per i nuovi bottoni "Altro" e "Chiudi" */
     .table-controls { margin-top: 1rem; display: flex; gap: 0.5rem; }
     .table-controls button { background: var(--secondary); border: none; padding: 0.4rem 0.8rem; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 0.9rem; }
@@ -122,20 +122,12 @@
       const top5=Object.entries(agg).map(([arg,v])=>({arg,...v})).sort((a,b)=>b.sumV-a.sumV).slice(0,5);
       const perfDiv=document.createElement('div');const hperf=document.createElement('h3');hperf.textContent='Best performers';perfDiv.appendChild(hperf);
       
-      // --- MODIFICA INIZIA QUI ---
       const btnSave=document.createElement('button');btnSave.className='save-table';btnSave.textContent='Salva come Excel';
       btnSave.addEventListener('click', () => {
-          // Crea un nuovo Workbook
           const wb = XLSX.utils.book_new();
-
-          // 1. Prepara i dati per il primo foglio: dati_complessivi
-          const datiComplessiviSheetData = Object.entries(datiI).map(([key, value]) => {
-              return { 'Voce': key, 'Valore': value };
-          });
+          const datiComplessiviSheetData = Object.entries(datiI).map(([key, value]) => ({ 'Voce': key, 'Valore': value }));
           const ws1 = XLSX.utils.json_to_sheet(datiComplessiviSheetData);
           XLSX.utils.book_append_sheet(wb, ws1, 'dati_complessivi');
-
-          // 2. Prepara i dati per il secondo foglio: best_performers
           const bestPerformersSheetData = top5.map(o => ({
               'Argomento': o.arg,
               'Visualizzazioni': o.sumV,
@@ -145,15 +137,18 @@
           }));
           const ws2 = XLSX.utils.json_to_sheet(bestPerformersSheetData);
           XLSX.utils.book_append_sheet(wb, ws2, 'best_performers');
-
-          // 3. Scrive e scarica il file Excel
           XLSX.writeFile(wb, 'report_istituzionali.xlsx');
       });
-      perfDiv.appendChild(btnSave);
-      // --- MODIFICA FINISCE QUI ---
-
+      
       const tblP=document.createElement('table');tblP.innerHTML='<thead><tr><th>Argomento</th><th>Visualizzazioni</th><th>Interazioni</th><th>Like e reazioni</th><th>Condivisioni</th><th>Link</th></tr></thead>';
-      const bodyP=document.createElement('tbody');top5.forEach(o=>{const tr=document.createElement('tr');[[o.arg],[formatNumber(o.sumV)],[formatNumber(o.sumI)],[formatNumber(o.sumL)],[formatNumber(o.sumC)]].forEach(([val])=>{const td=document.createElement('td');td.textContent=val;td.appendChild(createCopyBtn(val));tr.appendChild(td);});const tdL=document.createElement('td');const aL=document.createElement('a');aL.href=o.link;aL.target='_blank';aL.textContent='Link';aL.className='link-btn';tdL.appendChild(aL);tr.appendChild(tdL);bodyP.appendChild(tr);});tblP.appendChild(bodyP);perfDiv.appendChild(tblP);istCard.appendChild(perfDiv);report.appendChild(istCard);
+      const bodyP=document.createElement('tbody');top5.forEach(o=>{const tr=document.createElement('tr');[[o.arg],[formatNumber(o.sumV)],[formatNumber(o.sumI)],[formatNumber(o.sumL)],[formatNumber(o.sumC)]].forEach(([val])=>{const td=document.createElement('td');td.textContent=val;td.appendChild(createCopyBtn(val));tr.appendChild(td);});const tdL=document.createElement('td');const aL=document.createElement('a');aL.href=o.link;aL.target='_blank';aL.textContent='Link';aL.className='link-btn';tdL.appendChild(aL);tr.appendChild(tdL);bodyP.appendChild(tr);});tblP.appendChild(bodyP);perfDiv.appendChild(tblP);
+      istCard.appendChild(perfDiv);
+      
+      // --- MODIFICA: Il pulsante viene aggiunto qui, alla fine del riquadro principale ---
+      istCard.appendChild(btnSave);
+
+      report.appendChild(istCard);
+      
       // Argomenti più visualizzati
       const topics={};filtered.forEach(r=>{const arg=r.Argomento||'';const vis=Number(r.Visualizzazioni)||0;if(!topics[arg])topics[arg]={count:0,sum:0};topics[arg].count++;topics[arg].sum+=vis;});
       const topTop=Object.entries(topics).map(([arg,s])=>({arg,count:s.count,sum:s.sum})).sort((a,b)=>b.sum-a.sum).slice(0,3);
