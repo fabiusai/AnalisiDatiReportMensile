@@ -121,7 +121,37 @@
       const agg={};istit.forEach(r=>{const arg=r.Argomento||'';if(!agg[arg])agg[arg]={sumV:0,sumI:0,sumL:0,sumC:0,link:r.Link};agg[arg].sumV+=Number(r.Visualizzazioni)||0;agg[arg].sumI+=Number(r.Interazioni)||0;agg[arg].sumL+=Number(r['Like e reazioni'])||0;agg[arg].sumC+=Number(r.Condivisioni)||0;});
       const top5=Object.entries(agg).map(([arg,v])=>({arg,...v})).sort((a,b)=>b.sumV-a.sumV).slice(0,5);
       const perfDiv=document.createElement('div');const hperf=document.createElement('h3');hperf.textContent='Best performers';perfDiv.appendChild(hperf);
-      const btnSave=document.createElement('button');btnSave.className='save-table';btnSave.textContent='Salva tabella';btnSave.addEventListener('click',()=>{const headers=['Argomento','Visualizzazioni','Interazioni','Like e reazioni','Condivisioni'];const rows=top5.map(o=>[o.arg,formatNumber(o.sumV),formatNumber(o.sumI),formatNumber(o.sumL),formatNumber(o.sumC)]);let csv=headers.join(',')+'\n'+rows.map(r=>r.join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='best_performers.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);});perfDiv.appendChild(btnSave);
+      
+      // --- MODIFICA INIZIA QUI ---
+      const btnSave=document.createElement('button');btnSave.className='save-table';btnSave.textContent='Salva come Excel';
+      btnSave.addEventListener('click', () => {
+          // Crea un nuovo Workbook
+          const wb = XLSX.utils.book_new();
+
+          // 1. Prepara i dati per il primo foglio: dati_complessivi
+          const datiComplessiviSheetData = Object.entries(datiI).map(([key, value]) => {
+              return { 'Voce': key, 'Valore': value };
+          });
+          const ws1 = XLSX.utils.json_to_sheet(datiComplessiviSheetData);
+          XLSX.utils.book_append_sheet(wb, ws1, 'dati_complessivi');
+
+          // 2. Prepara i dati per il secondo foglio: best_performers
+          const bestPerformersSheetData = top5.map(o => ({
+              'Argomento': o.arg,
+              'Visualizzazioni': o.sumV,
+              'Interazioni': o.sumI,
+              'Like e reazioni': o.sumL,
+              'Condivisioni': o.sumC
+          }));
+          const ws2 = XLSX.utils.json_to_sheet(bestPerformersSheetData);
+          XLSX.utils.book_append_sheet(wb, ws2, 'best_performers');
+
+          // 3. Scrive e scarica il file Excel
+          XLSX.writeFile(wb, 'report_istituzionali.xlsx');
+      });
+      perfDiv.appendChild(btnSave);
+      // --- MODIFICA FINISCE QUI ---
+
       const tblP=document.createElement('table');tblP.innerHTML='<thead><tr><th>Argomento</th><th>Visualizzazioni</th><th>Interazioni</th><th>Like e reazioni</th><th>Condivisioni</th><th>Link</th></tr></thead>';
       const bodyP=document.createElement('tbody');top5.forEach(o=>{const tr=document.createElement('tr');[[o.arg],[formatNumber(o.sumV)],[formatNumber(o.sumI)],[formatNumber(o.sumL)],[formatNumber(o.sumC)]].forEach(([val])=>{const td=document.createElement('td');td.textContent=val;td.appendChild(createCopyBtn(val));tr.appendChild(td);});const tdL=document.createElement('td');const aL=document.createElement('a');aL.href=o.link;aL.target='_blank';aL.textContent='Link';aL.className='link-btn';tdL.appendChild(aL);tr.appendChild(tdL);bodyP.appendChild(tr);});tblP.appendChild(bodyP);perfDiv.appendChild(tblP);istCard.appendChild(perfDiv);report.appendChild(istCard);
       // Argomenti più visualizzati
@@ -188,7 +218,6 @@
         container.appendChild(createSection('Post con più interazioni', posts, 'Interazioni'));
     }
 
-    // --- MODIFICA INIZIA QUI: Funzione createSection aggiornata ---
     function createSection(title, posts, metric) {
         const sectionContainer = document.createElement('div');
         const h3 = document.createElement('h3');
@@ -273,7 +302,6 @@
         
         return sectionContainer;
     }
-    // --- MODIFICA FINISCE QUI ---
 
     function createCopyBtn(val){
         const btn=document.createElement('button');
