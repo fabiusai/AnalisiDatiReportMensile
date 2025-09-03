@@ -1,3 +1,5 @@
+--- START OF FILE index.html ---
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -26,10 +28,21 @@
     button.copy-btn:focus { outline: none; }
     button.save-table { margin: 1.5rem 0 0.5rem 0; background: var(--primary); color: #fff; border: none; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer; border-radius: 4px; }
     /* Stile per i nuovi bottoni "Altro" e "Chiudi" */
-    .table-controls { margin-top: 1rem; display: flex; gap: 0.5rem; }
+    .table-controls { margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center; }
     .table-controls button { background: var(--secondary); border: none; padding: 0.4rem 0.8rem; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 0.9rem; }
     a.link-btn { color: var(--primary); text-decoration: underline; font-weight: bold; }
     .note { font-size: 0.9rem; font-style: italic; margin-top: 1rem; }
+    .save-channel-table { 
+        margin-left: auto; /* Sposta il pulsante a destra */
+        background-color: var(--secondary); /* Sfondo giallo come gli altri pulsanti di controllo */
+        color: var(--primary); /* Testo blu */
+        border: none; 
+        padding: 0.4rem 0.8rem; 
+        font-size: 0.9rem; 
+        cursor: pointer; 
+        border-radius: 4px; 
+        font-weight: bold; /* Rendi il testo in grassetto per coerenza */
+    }
   </style>
 </head>
 <body>
@@ -209,11 +222,11 @@
         const posts = allPosts.filter(r => r.Canale.trim().toLowerCase() === channel);
         if (!posts.length) return;
         
-        container.appendChild(createSection('Post più visualizzati', posts, 'Visualizzazioni'));
-        container.appendChild(createSection('Post con più interazioni', posts, 'Interazioni'));
+        container.appendChild(createSection('Post più visualizzati', posts, 'Visualizzazioni', channel + ' - Post più visualizzati'));
+        container.appendChild(createSection('Post con più interazioni', posts, 'Interazioni', channel + ' - Post con più interazioni'));
     }
 
-    function createSection(title, posts, metric) {
+    function createSection(title, posts, metric, filenamePrefix) {
         const sectionContainer = document.createElement('div');
         const h3 = document.createElement('h3');
         h3.textContent = title;
@@ -235,6 +248,10 @@
         const showLessBtn = document.createElement('button');
         showLessBtn.textContent = 'Chiudi visualizzazione estesa';
         showLessBtn.style.display = 'none'; // Nascosto di default
+
+        const saveChannelTableBtn = document.createElement('button');
+        saveChannelTableBtn.textContent = 'Salva come Excel';
+        saveChannelTableBtn.className = 'save-channel-table'; // Nuova classe per lo stile
 
         // Funzione interna per aggiornare le righe della tabella
         function updateTableRows(count) {
@@ -270,8 +287,8 @@
             if (requestedCount === null) return; // L'utente ha annullato
             
             const num = parseInt(requestedCount, 10);
-            if (isNaN(num) || num <= currentCount) {
-                alert(`Inserisci un numero valido e maggiore di ${currentCount}.`);
+            if (isNaN(num) || num < currentCount) { // Modificato per consentire di visualizzare lo stesso numero se già al massimo
+                alert(`Inserisci un numero valido e maggiore o uguale a ${currentCount > 0 ? currentCount : 1}.`);
                 return;
             }
             
@@ -286,10 +303,28 @@
             updateTableRows(3);
             showLessBtn.style.display = 'none';
         });
+
+        // Event listener per il pulsante "Salva come Excel"
+        saveChannelTableBtn.addEventListener('click', () => {
+            const wb = XLSX.utils.book_new();
+            const sheetData = sortedPosts.map(r => ({
+                'Label': r.Label.toUpperCase(),
+                'Argomento': r.Argomento,
+                'Data': formatDate(r.Data),
+                'Copy': r.Copy,
+                'Visualizzazioni': Number(r.Visualizzazioni) || 0,
+                'Interazioni': Number(r.Interazioni) || 0,
+                'Link': r.Link
+            }));
+            const ws = XLSX.utils.json_to_sheet(sheetData);
+            XLSX.utils.book_append_sheet(wb, ws, title.replace(/ /g, '_')); // Nome del foglio dal titolo
+            XLSX.writeFile(wb, `${filenamePrefix.replace(/ /g, '_')}.xlsx`);
+        });
         
         sectionContainer.appendChild(table);
         controlsContainer.appendChild(showMoreBtn);
         controlsContainer.appendChild(showLessBtn);
+        controlsContainer.appendChild(saveChannelTableBtn); // Aggiungi il pulsante di salvataggio
         sectionContainer.appendChild(controlsContainer);
 
         // Visualizzazione iniziale
