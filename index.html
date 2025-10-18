@@ -1,5 +1,3 @@
---- START OF FILE index.html ---
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -99,13 +97,18 @@
         Postepay: filtered.filter(r=>r.Canale.trim().toLowerCase()==='instagram postepay').length,
         PosteMobile: filtered.filter(r=>r.Canale.trim().toLowerCase()==='instagram postemobile').length
       };
+      
+      // --- MODIFICA: Aggiunto contatore per Whatsapp ---
+      const whatsappCount = filtered.filter(r=>r.Canale.trim().toLowerCase()==='whatsapp').length;
+
       const totals={
         'Numero post complessivi':filtered.length,
         'Facebook':fbCounts.PosteItaliane+fbCounts.Postepay+fbCounts.PosteMobile,
         'Twitter':filtered.filter(r=>r.Canale.trim().toLowerCase()==='twitter').length,
         'Linkedin':filtered.filter(r=>r.Canale.trim().toLowerCase()==='linkedin').length,
         'Instagram':igCounts.PosteItaliane+igCounts.Postepay+igCounts.PosteMobile,
-        'Youtube':filtered.filter(r=>r.Canale.trim().toLowerCase()==='youtube').length
+        'Youtube':filtered.filter(r=>r.Canale.trim().toLowerCase()==='youtube').length,
+        'Whatsapp': whatsappCount // --- MODIFICA: Aggiunta riga per Whatsapp ---
       };
       const calcCard=document.createElement('div'); calcCard.className='card'; calcCard.innerHTML='<h2>Calcolo post pubblicati</h2>';
       const tblCalc=document.createElement('table'); tblCalc.innerHTML='<thead><tr><th>Descrizione</th><th>Valore</th></tr></thead>';
@@ -116,6 +119,7 @@
         `Dettaglio post Facebook: Poste Italiane (${fbCounts.PosteItaliane}), Postepay (${fbCounts.Postepay}), PosteMobile (${fbCounts.PosteMobile}). `+
         `Dettaglio post Instagram: Poste Italiane (${igCounts.PosteItaliane}), Postepay (${igCounts.Postepay}), PosteMobile (${igCounts.PosteMobile}).`;
       calcCard.appendChild(noteCalc);report.appendChild(calcCard);
+      
       // Post Istituzionali
       const istit=filtered.filter(r=>String(r.Istituzionale).trim()==='1');
       const datiI={
