@@ -129,30 +129,20 @@
     // NUOVA FUNZIONE DI FORMATTAZIONE PER JSON EXECUTIVE SUMMARY
     function formatNumberForJson(num) {
         let val = Number(num) || 0;
-        let suffix = "";
 
         if (val >= 1000000) {
+            // Per i milioni: mantiene i decimali (max 2), rimuovendo zeri inutili
             val = val / 1000000;
-            suffix = "M";
+            let formatted = parseFloat(val.toFixed(2)).toString().replace('.', ',');
+            return formatted + "M";
         } else if (val >= 1000) {
-            val = val / 1000;
-            suffix = "K";
+            // Per le migliaia: arrotonda all'intero più vicino
+            val = Math.round(val / 1000);
+            return val.toString() + "K";
         } else {
-            // Per numeri < 1000 restituisce il numero come stringa (con eventuale virgola per decimali se presenti, anche se per i contatori è raro)
+            // Per numeri < 1000
             return val.toString().replace('.', ',');
         }
-
-        // Arrotonda a 2 decimali
-        let formatted = val.toFixed(2);
-        
-        // Rimuove zeri finali e punto decimale inutile
-        // parseFloat converte "15.80" -> 15.8 e "15.00" -> 15
-        formatted = parseFloat(formatted).toString();
-        
-        // Sostituisce il punto con la virgola
-        formatted = formatted.replace('.', ',');
-
-        return formatted + suffix;
     }
 
     function renderReport(data) {
