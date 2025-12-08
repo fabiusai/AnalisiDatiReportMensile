@@ -380,7 +380,9 @@
           [[o.arg],[formatNumber(o.v)],[formatNumber(o.i)],[formatNumber(o.l)]].forEach(([val]) => {
               const td = document.createElement('td'); td.textContent = val; td.appendChild(createCopyBtn(val)); tr.appendChild(td);
           });
-          tr.innerHTML += `<td><a href="${o.lnk}" target="_blank" class="link-btn"><i class="fas fa-external-link-alt"></i> Apri</a></td>`;
+          const tdLink = document.createElement('td');
+          tdLink.innerHTML = `<a href="${o.lnk}" target="_blank" class="link-btn"><i class="fas fa-external-link-alt"></i> Apri</a>`;
+          tr.appendChild(tdLink);
           tbl.querySelector('tbody').appendChild(tr);
       });
       tblWrap.appendChild(tbl); perfDiv.appendChild(tblWrap);
@@ -483,7 +485,7 @@
                     const arg = r.Argomento || '';
                     const date = formatDate(r.Data);
                     
-                    const copyFull = r.Copy || '';
+                    const copyFull = r.Copy ? String(r.Copy) : '';
                     const copyDisplay = copyFull.length > 40 ? copyFull.substring(0,40) + '...' : copyFull;
 
                     // Creazione Celle con Tasto Copia
@@ -494,7 +496,18 @@
                         tr.appendChild(td);
                     });
                     
-                    tr.innerHTML += `<td><a href="${r.Link}" target="_blank" class="link-btn"><i class="fas fa-link"></i></a></td>`;
+                    // CORREZIONE BUG: Uso createElement invece di innerHTML +=
+                    const tdLink = document.createElement('td');
+                    if(r.Link) {
+                        const aLink = document.createElement('a');
+                        aLink.href = r.Link;
+                        aLink.target = "_blank";
+                        aLink.className = "link-btn";
+                        aLink.innerHTML = '<i class="fas fa-link"></i>';
+                        tdLink.appendChild(aLink);
+                    }
+                    tr.appendChild(tdLink);
+                    
                     tbl.querySelector('tbody').appendChild(tr);
                 });
             };
