@@ -516,15 +516,28 @@
           "Like + interazoni post istituzionali": formatNumberForJson(kpiIst['Interazioni'] + kpiIst['Like/Reazioni'])
       };
 
-      // 4. CANALI (SOCIAL CARD VIEW)
-      const channels = [...new Set(filtered.map(r => r.Canale.trim().toLowerCase()))];
+      // 4. CANALI (SOCIAL CARD VIEW - SORTED DROPDOWN)
       const chanCard = document.createElement('div'); chanCard.className='card';
       chanCard.innerHTML = `<h2><i class="fas fa-filter"></i> Feed di Canale</h2>`;
       
       const selDiv = document.createElement('div'); selDiv.className='channel-selector';
       selDiv.innerHTML = '<select id="chan-sel" style="padding:10px; font-size:1rem; border-radius:6px; border:1px solid #cbd5e0; width: 100%; max-width: 300px;"><option value="">-- Seleziona un Canale --</option></select>';
-      channels.forEach(c => {
-          const opt = document.createElement('option'); opt.value=c; opt.textContent=c.toUpperCase();
+      
+      // Calcolo Conteggio Post per Canale per ordinamento
+      const chanCounts = {};
+      filtered.forEach(r => {
+        const c = r.Canale.trim().toLowerCase();
+        if(!chanCounts[c]) chanCounts[c] = 0;
+        chanCounts[c]++;
+      });
+      // Convertiamo in array e ordiniamo per conteggio decrescente
+      const sortedChannels = Object.entries(chanCounts).sort((a,b) => b[1] - a[1]);
+
+      sortedChannels.forEach(([cName, count]) => {
+          const opt = document.createElement('option'); 
+          opt.value = cName; 
+          // Aggiungiamo il conteggio alla label per chiarezza
+          opt.textContent = `${cName.toUpperCase()} (${count})`;
           selDiv.querySelector('select').appendChild(opt);
       });
       chanCard.appendChild(selDiv);
