@@ -14,10 +14,10 @@
       --text: #2c3e50;
       --text-light: #607d8b;
       --card-bg: #fff;
-      --border-radius: 8px;
-      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --border-radius: 12px;
+      --shadow: 0 4px 12px rgba(0,0,0,0.05);
       --icon-size: 1.5rem; 
-      --icon-color: #00529F; /* BLU richiesto */
+      --icon-color: #00529F;
     }
     
     body { 
@@ -25,8 +25,8 @@
       font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; 
       background: var(--bg); 
       color: var(--text); 
-      font-size: 16px; 
-      line-height: 1.6; 
+      font-size: 15px; 
+      line-height: 1.5; 
     }
     
     /* Header */
@@ -38,8 +38,9 @@
       align-items: center; 
       justify-content: space-between; 
       box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+      position: sticky; top: 0; z-index: 100;
     }
-    header h1 { margin: 0; font-size: 1.5rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+    header h1 { margin: 0; font-size: 1.4rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
     
     .container { max-width: 1400px; margin: 2rem auto; padding: 0 1.5rem; }
     
@@ -48,7 +49,7 @@
       background: var(--card-bg);
       border: 3px dashed #cbd5e0;
       border-radius: var(--border-radius);
-      padding: 2.5rem;
+      padding: 2rem;
       text-align: center;
       margin-bottom: 2rem;
       cursor: pointer;
@@ -57,14 +58,14 @@
     }
     .upload-area:hover { border-color: var(--primary); background: #f0f7ff; }
     .upload-area input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-    .upload-text { font-size: 1.2rem; color: var(--text-light); font-weight: 500; }
-    .upload-icon { font-size: 3rem; color: var(--primary); margin-bottom: 1rem; display: block; }
+    .upload-text { font-size: 1.1rem; color: var(--text-light); font-weight: 500; }
+    .upload-icon { font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem; display: block; }
 
     /* Tabs */
     .tabs-container { display: none; }
     .tabs-header { display: flex; gap: 10px; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; }
     .tab-btn {
-      padding: 12px 25px;
+      padding: 10px 20px;
       background: #fff;
       border: 1px solid #e2e8f0;
       border-bottom: none;
@@ -72,7 +73,7 @@
       cursor: pointer;
       font-weight: 600;
       color: var(--text-light);
-      font-size: 1rem;
+      font-size: 0.95rem;
       transition: all 0.2s;
       display: flex; align-items: center; gap: 8px;
     }
@@ -84,66 +85,171 @@
 
     /* Executive Button */
     #exec-btn { 
-      background-color: #27ae60; color: white; border: none; padding: 10px 20px; 
-      border-radius: 6px; font-weight: 600; cursor: pointer; display: none; font-size: 1rem;
+      background-color: #27ae60; color: white; border: none; padding: 8px 16px; 
+      border-radius: 6px; font-weight: 600; cursor: pointer; display: none; font-size: 0.9rem;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     #exec-btn:hover { background-color: #219150; }
 
-    /* Cards */
+    /* Cards Gen */
     .card { background: var(--card-bg); padding: 1.5rem; margin-bottom: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); border: 1px solid #e1e4e8; }
-    .card h2 { margin-top: 0; color: var(--primary); font-size: 1.3rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
+    .card h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
 
     /* Stats Grid */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.5rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; }
     .stat-card {
       background: #fff; border: 1px solid #e2e8f0; border-radius: var(--border-radius);
-      padding: 1.2rem; position: relative; border-left: 5px solid #ddd;
+      padding: 1rem; position: relative; border-left: 4px solid #ddd;
       transition: transform 0.2s;
     }
     .stat-card:hover { transform: translateY(-3px); border-left-color: var(--primary); }
-    
-    .stat-label { 
-        font-size: 0.95rem; color: var(--text-light); text-transform: uppercase; font-weight: 600; 
-        display: flex; align-items: center; gap: 12px; margin-bottom: 0.8rem; 
+    .stat-label { font-size: 0.85rem; color: var(--text-light); text-transform: uppercase; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 0.5rem; }
+    .stat-label i { font-size: 1.2rem; color: var(--icon-color); }
+    .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
+
+    /* --- STILE POST SOCIAL (CARD LAYOUT) --- */
+    .post-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
     }
-    /* Icone Social: Colore Blu */
-    .stat-label i { font-size: var(--icon-size); color: var(--icon-color); transition: transform 0.3s; }
-    .stat-card:hover .stat-label i { transform: scale(1.1); color: var(--primary-hover); }
+    
+    .post-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s;
+      overflow: hidden;
+    }
+    .post-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      border-color: #cbd5e0;
+    }
 
-    .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: space-between; min-height: 40px; }
+    /* Header Post: Icona, Label, Data */
+    .post-header {
+      padding: 12px 16px;
+      background: #fdfdfd;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .post-channel-icon {
+      font-size: 24px;
+      color: var(--primary);
+      margin-top: 2px;
+    }
+    .post-meta {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .post-label { font-weight: 700; color: #2d3748; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between; }
+    .post-date { font-size: 0.8rem; color: #718096; display: flex; align-items: center; gap: 6px; }
+    
+    /* Body Post: Topic, Copy */
+    .post-body {
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .post-topic {
+      display: inline-block;
+      background: #eef2f7;
+      color: var(--primary);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      align-self: flex-start;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+      /* Flex per allineare il tasto copia */
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .post-text {
+      font-size: 0.95rem;
+      color: #4a5568;
+      white-space: pre-wrap; /* Mantiene a capo */
+      background: #fff;
+      line-height: 1.5;
+      position: relative;
+    }
+    .post-text-wrapper {
+        position: relative;
+    }
+    .post-text-copy-btn {
+        position: absolute;
+        top: 0; right: 0;
+    }
 
-    /* Tabelle */
-    .table-wrapper { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 1rem; }
-    table { width: 100%; border-collapse: collapse; font-size: 1rem; min-width: 800px; }
-    th { background: #f8fafc; color: #4a5568; font-weight: 700; padding: 1rem; text-align: left; border-bottom: 2px solid #e2e8f0; }
-    td { padding: 1rem; border-bottom: 1px solid #edf2f7; vertical-align: middle; }
-    tr:hover td { background-color: #f7fafc; }
+    /* Footer Post: Metriche */
+    .post-footer {
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .post-metrics {
+      display: flex;
+      gap: 15px;
+    }
+    .metric-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #4a5568;
+    }
+    .metric-item i { color: #a0aec0; }
+    .metric-item.views i { color: #3498db; }
+    .metric-item.likes i { color: #e74c3c; }
 
-    /* --- TASTO COPIA (Corretto per Locale) --- */
+    /* Bottone Link Esterno */
+    .post-link-btn {
+      color: #718096;
+      transition: color 0.2s;
+      font-size: 1.1rem;
+    }
+    .post-link-btn:hover { color: var(--primary); }
+
+    /* --- TASTO COPIA & UTILS --- */
     .copy-btn {
       background: transparent; 
-      color: #aaa; 
+      color: #cbd5e0; 
       border: none; 
-      padding: 8px; 
-      font-size: 1.1rem; 
+      padding: 2px;
+      font-size: 0.9rem; 
       cursor: pointer; 
-      border-radius: 4px; 
-      margin-left: 10px;
       transition: all 0.2s ease-in-out;
-      opacity: 0; /* Invisibile */
-      /* RIMOSSO pointer-events: none; per garantire il click */
+      opacity: 0.6;
     }
+    .copy-btn:hover { color: var(--primary); transform: scale(1.15); opacity: 1; }
+    /* Nelle card, rendiamo i copy btn visibili al click o hover del contenitore */
+    .post-card:hover .copy-btn { opacity: 1; color: #a0aec0; }
+    .post-card .copy-btn:hover { color: var(--primary); }
 
-    /* Mostra all'hover */
-    tr:hover .copy-btn, .stat-value:hover .copy-btn, .copy-btn:focus { opacity: 1; }
-    .copy-btn:hover { background: #e0e7ff; color: var(--primary); transform: scale(1.1); opacity: 1; }
-    
-    /* Bottoni Link e Save */
-    a.link-btn { color: var(--primary); background: #ebf8ff; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
-    a.link-btn:hover { background: var(--primary); color: white; }
-    .save-table, .save-channel-table { background: #f1c40f; color: #333; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 600; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+    .save-table, .save-channel-table { background: #f1c40f; color: #333; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 600; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; margin-bottom: 1rem; }
     .save-table:hover { background: #d4ac0d; }
+
+    /* Tabella Classica per Overview/Istituzionale */
+    .table-wrapper { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    th { background: #f8fafc; color: #4a5568; font-weight: 700; padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+    td { padding: 12px; border-bottom: 1px solid #edf2f7; vertical-align: middle; font-size: 0.9rem; }
+    tr:hover td { background-color: #f7fafc; }
 
     /* Toast */
     #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
@@ -158,7 +264,7 @@
 
   <header>
     <h1><i class="fas fa-chart-line"></i> Dashboard Report Social</h1>
-    <button id="exec-btn"><i class="fas fa-file-code"></i> Scarica JSON Executive</button>
+    <button id="exec-btn"><i class="fas fa-file-code"></i> JSON Executive</button>
   </header>
   
   <div id="toast-container"></div>
@@ -246,20 +352,20 @@
     function formatNumber(n) { n=Number(n)||0; if(n<1000)return n.toString(); if(n<1000000)return `${Math.round(n/1000)}K`; return `${(n/1000000).toFixed(2).replace('.',',')}M`; }
     function formatNumberForJson(n) { let v=Number(n)||0; if(v>=1000000)return (v/1000000).toFixed(2).replace('.',',')+"M"; if(v>=1000)return Math.round(v/1000)+"K"; return v.toString().replace('.',','); }
 
-    // --- FUNZIONE COPIA V4 (Compatibile Locale) ---
+    // --- FUNZIONE COPIA ROBUSTA ---
     function performCopy(text, btnElement) {
         if (!text) { showToast('Nessun testo da copiare', 'error'); return; }
-
         const onSuccess = () => {
             btnElement.innerHTML = '<i class="fas fa-check"></i>';
-            setTimeout(() => btnElement.innerHTML = '<i class="far fa-copy"></i>', 1500);
+            btnElement.style.color = '#27ae60';
+            setTimeout(() => { 
+                btnElement.innerHTML = '<i class="far fa-copy"></i>'; 
+                btnElement.style.color = '';
+            }, 1500);
         };
-
-        // Metodo 1: Clipboard API (Standard)
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopy(text, onSuccess));
         } else {
-            // Metodo 2: Fallback (Textarea - Funziona ovunque, anche file://)
             fallbackCopy(text, onSuccess);
         }
     }
@@ -267,35 +373,21 @@
     function fallbackCopy(text, onSuccess) {
         const textArea = document.createElement("textarea");
         textArea.value = text;
-        // Stile per nasconderla ma renderla selezionabile
-        textArea.style.position = "fixed"; 
-        textArea.style.left = "-9999px"; 
-        textArea.style.top = "0";
+        textArea.style.position = "fixed"; textArea.style.left = "-9999px"; textArea.style.top = "0";
         document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-            document.execCommand('copy');
-            onSuccess();
-        } catch (err) {
-            console.error('Copia fallita', err);
-            showToast('Impossibile copiare il testo', 'error');
-        }
+        textArea.focus(); textArea.select();
+        try { document.execCommand('copy'); onSuccess(); } 
+        catch (err) { showToast('Impossibile copiare il testo', 'error'); }
         document.body.removeChild(textArea);
     }
 
-    function createCopyBtn(textToCopy) {
+    function createCopyBtn(textToCopy, tooltip = "Copia") {
         const b = document.createElement('button'); 
         b.className = 'copy-btn'; 
         b.innerHTML = '<i class="far fa-copy"></i>'; 
-        b.title = "Copia valore";
-        // Converti sempre in stringa per sicurezza
+        b.title = tooltip;
         const safeText = String(textToCopy !== undefined && textToCopy !== null ? textToCopy : "");
-
-        b.onclick = (e) => { 
-            e.stopPropagation(); // Evita conflitti con click sulla riga
-            performCopy(safeText, b);
-        };
+        b.onclick = (e) => { e.stopPropagation(); performCopy(safeText, b); };
         return b;
     }
 
@@ -366,7 +458,7 @@
       });
       istCard.appendChild(istGrid);
 
-      // Best Perf Table
+      // Best Perf Table (Table view for precision)
       const agg={};istit.forEach(r=>{const a=r.Argomento||'ND';if(!agg[a])agg[a]={v:0,i:0,l:0,c:0,lnk:r.Link};agg[a].v+=Number(r.Visualizzazioni)||0;agg[a].i+=Number(r.Interazioni)||0;agg[a].l+=Number(r['Like e reazioni'])||0;agg[a].c+=Number(r.Condivisioni)||0;});
       const top5=Object.entries(agg).map(([a,d])=>({arg:a,...d})).sort((a,b)=>b.v-a.v).slice(0,5);
 
@@ -386,16 +478,7 @@
           tbl.querySelector('tbody').appendChild(tr);
       });
       tblWrap.appendChild(tbl); perfDiv.appendChild(tblWrap);
-      
-      const btnSaveI = document.createElement('button'); btnSaveI.className='save-table'; btnSaveI.innerHTML='<i class="fas fa-file-excel"></i> Salva Excel Istituzionale';
-      btnSaveI.onclick = () => {
-          const wb=XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Object.entries(kpiIst).map(([k,v])=>({KPI:k, Valore:v}))), 'KPI');
-          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(top5), 'Best_Perf');
-          XLSX.writeFile(wb, 'Report_Istituzionale.xlsx');
-      };
-      
-      istCard.appendChild(perfDiv); istCard.appendChild(btnSaveI); tabs.inst.appendChild(istCard);
+      istCard.appendChild(perfDiv); tabs.inst.appendChild(istCard);
 
       // 3. ARGOMENTI
       const topics={}; filtered.forEach(r=>{const a=r.Argomento||'Altro'; const v=Number(r.Visualizzazioni)||0; if(!topics[a])topics[a]={n:0,v:0}; topics[a].n++; topics[a].v+=v;});
@@ -416,7 +499,7 @@
       });
       tblTWrap.appendChild(tblT); topicCard.appendChild(tblTWrap); tabs.top.appendChild(topicCard);
 
-      // EXECUTIVE
+      // EXECUTIVE DATA GENERATION
       const safeTop = [...topTopics]; while(safeTop.length<3) safeTop.push({arg:"",v:0});
       latestExecutiveData = {
           "Numero post Facebook": formatNumberForJson(counts.fb),
@@ -433,36 +516,41 @@
           "Like + interazoni post istituzionali": formatNumberForJson(kpiIst['Interazioni'] + kpiIst['Like/Reazioni'])
       };
 
-      // 4. CANALI (CORRETTO)
+      // 4. CANALI (SOCIAL CARD VIEW)
       const channels = [...new Set(filtered.map(r => r.Canale.trim().toLowerCase()))];
       const chanCard = document.createElement('div'); chanCard.className='card';
-      chanCard.innerHTML = `<h2><i class="fas fa-filter"></i> Dettaglio per Canale</h2>`;
+      chanCard.innerHTML = `<h2><i class="fas fa-filter"></i> Feed di Canale</h2>`;
+      
       const selDiv = document.createElement('div'); selDiv.className='channel-selector';
-      selDiv.innerHTML = '<select id="chan-sel" style="padding:10px; font-size:1rem; border-radius:5px;"><option value="">-- Seleziona Canale --</option></select>';
+      selDiv.innerHTML = '<select id="chan-sel" style="padding:10px; font-size:1rem; border-radius:6px; border:1px solid #cbd5e0; width: 100%; max-width: 300px;"><option value="">-- Seleziona un Canale --</option></select>';
       channels.forEach(c => {
           const opt = document.createElement('option'); opt.value=c; opt.textContent=c.toUpperCase();
           selDiv.querySelector('select').appendChild(opt);
       });
       chanCard.appendChild(selDiv);
+      
       const chanContent = document.createElement('div'); chanContent.style.marginTop='1.5rem';
       chanCard.appendChild(chanContent);
+      
       selDiv.querySelector('select').addEventListener('change', (e) => {
           const c = e.target.value; chanContent.innerHTML=''; if(!c) return;
           const posts = filtered.filter(r=>r.Canale.trim().toLowerCase()===c);
-          renderChannelTable(posts, chanContent, c);
+          renderChannelCards(posts, chanContent, c);
       });
       tabs.chan.appendChild(chanCard);
     }
 
-    function renderChannelTable(posts, container, channelName) {
+    // --- NUOVA VISTA A CARTE PER I CANALI ---
+    function renderChannelCards(posts, container, channelName) {
         const createSec = (title, metric, iconClass) => {
-            const wrap = document.createElement('div'); wrap.style.marginBottom='2.5rem';
+            const wrap = document.createElement('div'); wrap.style.marginBottom='3rem';
             const sorted = [...posts].sort((a,b)=>(Number(b[metric])||0)-(Number(a[metric])||0));
             
-            const headDiv = document.createElement('div'); headDiv.style.display='flex'; headDiv.style.justifyContent='space-between'; headDiv.style.alignItems='center';
+            // Intestazione sezione e tasto download
+            const headDiv = document.createElement('div'); 
+            headDiv.style.display='flex'; headDiv.style.justifyContent='space-between'; headDiv.style.alignItems='center'; headDiv.style.marginBottom='1rem';
             headDiv.innerHTML = `<h3><i class="${iconClass}"></i> ${title}</h3>`;
-            
-            const btnEx = document.createElement('button'); btnEx.className='save-channel-table'; btnEx.innerHTML='<i class="fas fa-file-excel"></i> Scarica Excel';
+            const btnEx = document.createElement('button'); btnEx.className='save-channel-table'; btnEx.style.marginBottom='0'; btnEx.innerHTML='<i class="fas fa-file-excel"></i> Excel';
             btnEx.onclick = () => {
                 const ws = XLSX.utils.json_to_sheet(sorted.map(r=>({Label:r.Label, Arg:r.Argomento, Data:formatDate(r.Data), Copy:r.Copy, Vis:r.Visualizzazioni, Int:r.Interazioni, Link:r.Link})));
                 const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dati');
@@ -470,60 +558,117 @@
             };
             headDiv.appendChild(btnEx); wrap.appendChild(headDiv);
 
-            const tblDiv = document.createElement('div'); tblDiv.className='table-wrapper';
-            const tbl = document.createElement('table');
-            tbl.innerHTML = `<thead><tr><th>Label</th><th>Argomento</th><th>Data</th><th>Copy</th><th>Vis.</th><th>Int.</th><th>Link</th></tr></thead><tbody></tbody>`;
+            // Contenitore Griglia
+            const gridDiv = document.createElement('div'); 
+            gridDiv.className = 'post-grid';
             
-            let limit = 5;
-            const renderRows = () => {
-                tbl.querySelector('tbody').innerHTML = '';
+            let limit = 6; // Mostra 6 card per volta
+
+            const renderCards = () => {
+                gridDiv.innerHTML = '';
                 sorted.slice(0, limit).forEach(r => {
-                    const tr = document.createElement('tr');
+                    const label = r.Label || 'Account';
+                    const arg = r.Argomento || 'Generale';
+                    const date = formatDate(r.Data);
+                    const copyText = r.Copy || '';
                     const visF = formatNumber(r.Visualizzazioni);
                     const intF = formatNumber(r.Interazioni);
-                    const label = r.Label || '';
-                    const arg = r.Argomento || '';
-                    const date = formatDate(r.Data);
-                    
-                    const copyFull = r.Copy ? String(r.Copy) : '';
-                    const copyDisplay = copyFull.length > 40 ? copyFull.substring(0,40) + '...' : copyFull;
+                    const link = r.Link || '#';
 
-                    // Creazione Celle con Tasto Copia
-                    [[label,label], [arg,arg], [date,date], [copyDisplay,copyFull], [visF,visF], [intF,intF]].forEach(([disp, raw]) => {
-                        const td = document.createElement('td'); 
-                        td.textContent = disp; 
-                        td.appendChild(createCopyBtn(raw)); // Passa il testo grezzo
-                        tr.appendChild(td);
-                    });
+                    // Creazione DOM Card
+                    const card = document.createElement('div');
+                    card.className = 'post-card';
+
+                    // 1. Header
+                    const header = document.createElement('div'); header.className='post-header';
+                    header.innerHTML = `<div class="post-channel-icon">${getChannelIcon(channelName)}</div>`;
                     
-                    // CORREZIONE BUG: Uso createElement invece di innerHTML +=
-                    const tdLink = document.createElement('td');
-                    if(r.Link) {
-                        const aLink = document.createElement('a');
-                        aLink.href = r.Link;
-                        aLink.target = "_blank";
-                        aLink.className = "link-btn";
-                        aLink.innerHTML = '<i class="fas fa-link"></i>';
-                        tdLink.appendChild(aLink);
-                    }
-                    tr.appendChild(tdLink);
+                    const meta = document.createElement('div'); meta.className='post-meta';
                     
-                    tbl.querySelector('tbody').appendChild(tr);
+                    const labelRow = document.createElement('div'); labelRow.className='post-label';
+                    labelRow.textContent = label; 
+                    labelRow.appendChild(createCopyBtn(label, 'Copia Label'));
+                    
+                    const dateRow = document.createElement('div'); dateRow.className='post-date';
+                    dateRow.textContent = date;
+                    dateRow.appendChild(createCopyBtn(date, 'Copia Data'));
+
+                    meta.appendChild(labelRow); meta.appendChild(dateRow); header.appendChild(meta);
+
+                    // 2. Body
+                    const body = document.createElement('div'); body.className='post-body';
+                    
+                    const topicSpan = document.createElement('span'); topicSpan.className='post-topic';
+                    topicSpan.textContent = arg;
+                    topicSpan.appendChild(createCopyBtn(arg, 'Copia Argomento'));
+
+                    const textDiv = document.createElement('div'); textDiv.className='post-text-wrapper';
+                    const textP = document.createElement('div'); textP.className='post-text';
+                    textP.textContent = copyText; // Usare textContent per sicurezza
+                    
+                    // Aggiungo tasto copia per il testo (absolute top right)
+                    const copyBodyBtn = createCopyBtn(copyText, 'Copia Testo Post');
+                    copyBodyBtn.style.float = 'right';
+                    copyBodyBtn.style.marginLeft = '8px';
+                    
+                    // Assemblaggio Body
+                    body.appendChild(topicSpan);
+                    textP.prepend(copyBodyBtn); // Mette il bottone all'inizio del blocco testo
+                    body.appendChild(textP);
+
+                    // 3. Footer
+                    const footer = document.createElement('div'); footer.className='post-footer';
+                    
+                    const metrics = document.createElement('div'); metrics.className='post-metrics';
+                    
+                    const mVis = document.createElement('div'); mVis.className='metric-item views';
+                    mVis.innerHTML = '<i class="far fa-eye"></i> ' + visF;
+                    mVis.appendChild(createCopyBtn(visF));
+                    
+                    const mInt = document.createElement('div'); mInt.className='metric-item likes';
+                    mInt.innerHTML = '<i class="far fa-thumbs-up"></i> ' + intF;
+                    mInt.appendChild(createCopyBtn(intF));
+
+                    metrics.appendChild(mVis); metrics.appendChild(mInt);
+
+                    const linkBtn = document.createElement('a'); linkBtn.className='post-link-btn';
+                    linkBtn.href = link; linkBtn.target = '_blank';
+                    linkBtn.innerHTML = '<i class="fas fa-external-link-alt"></i>';
+                    linkBtn.title = "Apri post originale";
+
+                    footer.appendChild(metrics); footer.appendChild(linkBtn);
+
+                    // Append Parts
+                    card.appendChild(header);
+                    card.appendChild(body);
+                    card.appendChild(footer);
+
+                    gridDiv.appendChild(card);
                 });
             };
-            renderRows();
-            tblDiv.appendChild(tbl); wrap.appendChild(tblDiv);
+            
+            renderCards();
+            wrap.appendChild(gridDiv);
 
-            if(sorted.length > 5) {
-                const ctrls = document.createElement('div'); ctrls.style.marginTop='10px'; ctrls.style.display='flex'; ctrls.style.gap='10px';
-                const btnMore = document.createElement('button'); btnMore.className='save-table'; btnMore.style.background='#ecf0f1'; btnMore.textContent = `Mostra altri 10`;
-                const btnAll = document.createElement('button'); btnAll.className='save-table'; btnAll.style.background='#ecf0f1'; btnAll.textContent = `Mostra tutti (${sorted.length})`;
-                btnMore.onclick = () => { limit += 10; renderRows(); if(limit>=sorted.length) ctrls.style.display='none'; };
-                btnAll.onclick = () => { limit = sorted.length; renderRows(); ctrls.style.display='none'; };
+            // Bottoni "Mostra Altri"
+            if(sorted.length > 6) {
+                const ctrls = document.createElement('div'); 
+                ctrls.style.marginTop='20px'; ctrls.style.display='flex'; ctrls.style.justifyContent='center'; ctrls.style.gap='15px';
+                
+                const btnMore = document.createElement('button'); btnMore.className='save-table'; btnMore.style.background='#fff'; btnMore.style.border='1px solid #ccc';
+                btnMore.textContent = `Carica altri 6`;
+                
+                const btnAll = document.createElement('button'); btnAll.className='save-table'; btnAll.style.background='#fff'; btnAll.style.border='1px solid #ccc';
+                btnAll.textContent = `Mostra tutti (${sorted.length})`;
+                
+                btnMore.onclick = () => { limit += 6; renderCards(); if(limit>=sorted.length) ctrls.style.display='none'; };
+                btnAll.onclick = () => { limit = sorted.length; renderCards(); ctrls.style.display='none'; };
+                
                 ctrls.appendChild(btnMore); ctrls.appendChild(btnAll); wrap.appendChild(ctrls);
             }
             container.appendChild(wrap);
         };
+        
         createSec('Top per Visualizzazioni', 'Visualizzazioni', 'fas fa-eye');
         createSec('Top per Interazioni', 'Interazioni', 'fas fa-thumbs-up');
     }
