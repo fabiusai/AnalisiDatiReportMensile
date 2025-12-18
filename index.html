@@ -14,7 +14,7 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
 
   <style>
-    /* --- FONT ORIGINALE GRAFICI ISTITUZIONALI --- */
+    /* --- FONT ORIGINALE (VISIBILE NEL BROWSER) --- */
     @font-face {
         font-family: 'Avenir Next LT Pro';
         src: url('https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2') format('woff2');
@@ -254,6 +254,7 @@
     .toast { padding: 12px 24px; color: white; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: 500; display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s; }
     .toast.success { background: #27ae60; }
     .toast.error { background: #e74c3c; }
+    .toast.warning { background: #f39c12; }
     @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
     #chan-sel-container { margin-bottom: 1.5rem; }
@@ -354,7 +355,7 @@
           </div>
           <div class="modal-footer">
               <button class="action-btn yellow" onclick="downloadPostSvg()"><i class="fas fa-download"></i> Scarica SVG</button>
-              <button class="action-btn active" onclick="copyPostSvg()"><i class="far fa-copy"></i> Copia Immagine HD</button>
+              <button class="action-btn active" onclick="copyPostSvg()"><i class="far fa-copy"></i> Copia HQ (4x)</button>
           </div>
       </div>
   </div>
@@ -408,7 +409,7 @@
     // --- UTILS ---
     function showToast(msg, type) {
         const c = document.getElementById('toast-container');
-        const icon = type === 'success' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-circle"></i>';
+        const icon = type === 'success' ? '<i class="fas fa-check-circle"></i>' : (type === 'warning' ? '<i class="fas fa-exclamation-triangle"></i>' : '<i class="fas fa-exclamation-circle"></i>');
         const t = document.createElement('div'); t.className = `toast ${type}`; t.innerHTML = `${icon} ${msg}`;
         c.appendChild(t); setTimeout(() => t.remove(), 4000);
     }
@@ -438,6 +439,7 @@
         if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
             source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
         }
+        // Qui per il download diretto (file) possiamo mantenere i font esterni
         source = source.replace('>', '><style>@font-face { font-family: "Avenir Next LT Pro"; src: url("https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2") format("woff2"); } @font-face { font-family: "Arial"; src: local("Arial"); }</style>');
 
         const blob = new Blob([source], {type: 'image/svg+xml;charset=utf-8'});
@@ -447,37 +449,91 @@
         URL.revokeObjectURL(url);
     }
 
-    function copySvgAsImage(svgElement, widthOverride, heightOverride) {
+    /* --- COPIA ALTA RISOLUZIONE (4X) + FIX FIREFOX/LOCAL FILE --- */
+    function copySvgHighRes(svgElement) {
         if (!svgElement) return;
+        
+        showToast("Elaborazione immagine...", "warning");
+
         const serializer = new XMLSerializer();
         let source = serializer.serializeToString(svgElement);
         
-        let svgW, svgH;
-        if(widthOverride && heightOverride) {
-            svgW = widthOverride; svgH = heightOverride;
-        } else {
-             const viewBox = svgElement.getAttribute('viewBox').split(' ');
-             svgW = parseInt(viewBox[2]); svgH = parseInt(viewBox[3]);
+        // Assicuriamoci del namespace
+        if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+            source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        
+        // --- FIX CRITICO PER FIREFOX E BLOCCHI CORS ---
+        // NON iniettiamo @font-face con URL esterni nel blob del canvas.
+        // Firefox considera il canvas "Tainted" (contaminato) e blocca l'export.
+        // Usiamo invece font di sistema per la generazione dell'immagine da copiare.
+        const safeFontStyle = `<style>
+            text, tspan { font-family: "Segoe UI", "Arial", sans-serif !important; }
+        </style>`;
+        
+        // Inseriamo lo stile sicuro
+        if (source.indexOf('>') > -1) {
+             source = source.substring(0, source.indexOf('>') + 1) + safeFontStyle + source.substring(source.indexOf('>') + 1);
         }
 
-        const fontStyle = `<style>@font-face { font-family: 'Avenir Next LT Pro'; src: url('https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2') format('woff2'); } @font-face { font-family: 'Arial'; src: local('Arial'); }</style>`;
-        source = source.replace('>', '>' + fontStyle);
+        const scaleFactor = 4;
+        const viewBox = svgElement.getAttribute('viewBox').split(' ');
+        const w = parseFloat(viewBox[2]);
+        const h = parseFloat(viewBox[3]);
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = w * scaleFactor;
+        canvas.height = h * scaleFactor;
+        const ctx = canvas.getContext('2d');
+        
         const img = new Image();
         const svgBlob = new Blob([source], {type: 'image/svg+xml;charset=utf-8'});
         const url = URL.createObjectURL(svgBlob);
+        
         img.onload = function() {
-            const canvas = document.createElement('canvas');
-            canvas.width = svgW; canvas.height = svgH;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, svgW, svgH);
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
             canvas.toBlob(function(blob) {
-                try { navigator.clipboard.write([new ClipboardItem({'image/png': blob})]); showToast('Copiato (formato immagine HD)!', 'success'); } 
-                catch (err) { showToast('Errore copia. Usa "Scarica SVG"', 'error'); }
+                // TENTATIVO DI COPIA
+                if (navigator.clipboard && navigator.clipboard.write) {
+                    navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+                    .then(() => {
+                         showToast('Copiato con successo! Incolla su PowerPoint.', 'success'); 
+                    })
+                    .catch((err) => {
+                        console.error("Copia fallita (probabile blocco file locale):", err);
+                        // FALLBACK: SCARICA L'IMMAGINE
+                        downloadBlob(blob, "grafico-copia-fallback.png");
+                        showToast('Copia bloccata dal browser -> Immagine scaricata!', 'warning');
+                    });
+                } else {
+                    // FALLBACK SE CLIPBOARD API NON ESISTE
+                    downloadBlob(blob, "grafico-copia-fallback.png");
+                    showToast('Copia non supportata -> Immagine scaricata!', 'warning');
+                }
                 URL.revokeObjectURL(url);
-            });
+            }, 'image/png');
         };
+
+        img.onerror = function() {
+            showToast("Errore rendering immagine (Security Block)", "error");
+            console.error("Errore caricamento immagine SVG nel Canvas. Probabile causa: Font esterni o risorse cross-origin in ambiente locale.");
+            URL.revokeObjectURL(url);
+        };
+
         img.src = url;
+    }
+
+    function downloadBlob(blob, filename) {
+        const a = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     function copyTable(tableEl) {
@@ -667,7 +723,10 @@
         const con1 = document.getElementById('inst-chart-1'); con1.innerHTML='';
         const svg1 = renderInstSvgTop(c1H, c1V); con1.appendChild(svg1);
         const ctrl1 = document.getElementById('ctrl-chart-1'); ctrl1.innerHTML='';
-        const bC1 = document.createElement('button'); bC1.className='action-btn'; bC1.innerHTML='<i class="far fa-copy"></i> Copia'; bC1.onclick=()=>copySvgAsImage(svg1);
+        
+        // MODIFICATO PER USARE copySvgHighRes
+        const bC1 = document.createElement('button'); bC1.className='action-btn'; bC1.innerHTML='<i class="far fa-copy"></i> Copia HQ'; bC1.onclick=()=>copySvgHighRes(svg1);
+        
         const bD1 = document.createElement('button'); bD1.className='action-btn yellow'; bD1.innerHTML='<i class="fas fa-download"></i> SVG'; bD1.onclick=()=>downloadSvgDirect(svg1,'grafico-1.svg');
         ctrl1.append(bC1, bD1);
 
@@ -677,7 +736,10 @@
         const con2 = document.getElementById('inst-chart-2'); con2.innerHTML='';
         const svg2 = renderInstSvgBottom(c2H, c2R); con2.appendChild(svg2);
         const ctrl2 = document.getElementById('ctrl-chart-2'); ctrl2.innerHTML='';
-        const bC2 = document.createElement('button'); bC2.className='action-btn'; bC2.innerHTML='<i class="far fa-copy"></i> Copia'; bC2.onclick=()=>copySvgAsImage(svg2);
+        
+        // MODIFICATO PER USARE copySvgHighRes
+        const bC2 = document.createElement('button'); bC2.className='action-btn'; bC2.innerHTML='<i class="far fa-copy"></i> Copia HQ'; bC2.onclick=()=>copySvgHighRes(svg2);
+        
         const bD2 = document.createElement('button'); bD2.className='action-btn yellow'; bD2.innerHTML='<i class="fas fa-download"></i> SVG'; bD2.onclick=()=>downloadSvgDirect(svg2,'grafico-2.svg');
         ctrl2.append(bC2, bD2);
     }
@@ -843,7 +905,7 @@
         const buttons = container.append('div').attr('class', 'chart-buttons');
         const copyBtn = buttons.append('button').attr('class', 'chart-btn')
             .html('<i class="material-icons" style="font-size: 20px;">content_copy</i>');
-        copyBtn.append('span').attr('class', 'tooltip-chart').text('Copia immagine');
+        copyBtn.append('span').attr('class', 'tooltip-chart').text('Copia HQ');
         const downloadBtn = buttons.append('button').attr('class', 'chart-btn')
             .html('<i class="material-icons" style="font-size: 20px;">download</i>');
         downloadBtn.append('span').attr('class', 'tooltip-chart').text('Scarica SVG');
@@ -919,17 +981,12 @@
              const a = document.createElement("a"); a.href = url; a.download = `grafico-${title}.svg`;
              document.body.appendChild(a); a.click(); document.body.removeChild(a);
         });
+        
+        // MODIFICATO PER USARE copySvgHighRes invece di Canvas standard
         copyBtn.on('click', () => {
-            const img = new Image();
-            img.onload = () => {
-                const c = document.createElement("canvas"); 
-                c.width = 1200; 
-                c.height = 453;
-                c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-                c.toBlob(b => { navigator.clipboard.write([new ClipboardItem({'image/png': b})]); 
-                const t = copyBtn.select('.tooltip-chart').node(); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); });
-            };
-            img.src = URL.createObjectURL(getBlob());
+            // Seleziona il nodo SVG reale dal container D3
+            const svgNode = container.select('svg').node();
+            copySvgHighRes(svgNode);
         });
     }
 
@@ -1033,9 +1090,8 @@
 
     function copyPostSvg() {
         const svgEl = document.querySelector('#pg-preview-container svg'); if(!svgEl) return;
-        // Usa la funzione copySvgAsImage per generare una PNG (compatibile PPT) con le dimensioni esatte SVG (868x441)
-        // Stessa tecnica usata nei grafici temporali per garantire la copia "perfettamente funzionante"
-        copySvgAsImage(svgEl, 868, 441);
+        // MODIFICATO PER USARE copySvgHighRes invece di png normale
+        copySvgHighRes(svgEl);
     }
   </script>
 </body>
