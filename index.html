@@ -696,7 +696,7 @@
         return '<i class="fas fa-share-alt"></i>';
     }
 
-    // --- JSON EXECUTIVE ---
+    // --- JSON EXECUTIVE (AGGIORNATO AL MODELLO RICHIESTO) ---
     jsonExecBtn.addEventListener('click', () => {
         if (!filteredData || filteredData.length === 0) { showToast("Nessun dato!", "error"); return; }
         const counts = { fb:0, ig:0, wa:0, tw:0, li:0, yt:0 };
@@ -712,13 +712,33 @@
         const colIst = findCol('istituzionale', rawData[0]) || 'Istituzionale';
         const instData = filteredData.filter(r => String(r[colIst]).trim() === '1');
         const instStats = { n: instData.length, v: instData.reduce((s,r) => s + (Number(r[cols.vis])||0), 0), i: instData.reduce((s,r) => s + (Number(r[cols.inter])||0) + (Number(r[cols.like])||0), 0) };
+        
+        // MODELLO JSON RICHIESTO
         const customJson = {
-            "__COMMENTO__": "--- AMBITO 2: Volumi ---", "FB": formatNumberForJson(counts.fb), "IG": formatNumberForJson(counts.ig), "LI": formatNumberForJson(counts.li), "TW": formatNumberForJson(counts.tw), "WA": formatNumberForJson(counts.wa), "YT": formatNumberForJson(counts.yt),
-            "__COMMENTO_BEST__": "--- AMBITO 3: Best ---", "Topic1": sortedTopics[0]?.arg, "Vis1": formatNumberForJson(sortedTopics[0]?.v),
-            "__COMMENTO_INST__": "--- ISTITUZIONALI ---", "N": formatNumberForJson(instStats.n), "Vis": formatNumberForJson(instStats.v), "Inter": formatNumberForJson(instStats.i)
+            "__COMMENTO_SEZIONE_VOLUMI__": "--- AMBITO 2: Volumi Post ---",
+            "Numero post Facebook": counts.fb.toString(),
+            "Numero post Instagram": counts.ig.toString(),
+            "Numero post Linkedin": counts.li.toString(),
+            "Numero post X (Twitter)": counts.tw.toString(),
+            "Numero post Whatsapp": counts.wa.toString(),
+            "Numero post Youtube": counts.yt.toString(),
+            
+            "__COMMENTO_SEZIONE_BEST__": "--- AMBITO 3: Best Performer ---",
+            "Argomenti più visualizzati 1": sortedTopics[0]?.arg || "",
+            "Visualizzazione Argomenti più visualizzati 1": formatNumberForJson(sortedTopics[0]?.v || 0),
+            "Argomenti più visualizzati 2": sortedTopics[1]?.arg || "",
+            "Visualizzazione Argomenti più visualizzati 2": formatNumberForJson(sortedTopics[1]?.v || 0),
+            "Argomenti più visualizzati 3": sortedTopics[2]?.arg || "",
+            "Visualizzazione Argomenti più visualizzati 3": formatNumberForJson(sortedTopics[2]?.v || 0),
+            
+            "__COMMENTO_SEZIONE_ISTITUZIONALI__": "--- DATI ISTITUZIONALI ---",
+            "Numero post istituzionali": instStats.n.toString(),
+            "Visualizzazione post istituzionali": formatNumberForJson(instStats.v),
+            "Like + interazoni post istituzionali": formatNumberForJson(instStats.i)
         };
+
         const blob = new Blob([JSON.stringify(customJson, null, 2)], { type: "application/json" });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Executive_${new Date().toISOString().slice(0,10)}.json`;
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Executive_Report_${new Date().toISOString().slice(0,10)}.json`;
         a.click();
     });
 
@@ -1466,6 +1486,25 @@
         });
 
         return svg;
+    }
+
+    // Helper specifico per download trasparente
+    function downloadTransparentSvg(svgElement, filename) {
+        if (!svgElement) return;
+        const serializer = new XMLSerializer();
+        let source = serializer.serializeToString(svgElement);
+        
+        if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+            source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        
+        source = source.replace('>', '><style>@font-face { font-family: "Avenir Next LT Pro"; src: url("https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2") format("woff2"); } text { font-family: "Avenir Next LT Pro", sans-serif; }</style>');
+
+        const blob = new Blob([source], {type: 'image/svg+xml;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
   </script>
 </body>
