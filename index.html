@@ -224,10 +224,12 @@
     .charts-container { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; }
     .chart-wrapper {
         position: relative; background-color: #fff; border-radius: var(--border-radius);
-        box-shadow: var(--shadow); padding: 10px; height: 325px;
+        box-shadow: var(--shadow); padding: 10px; height: auto;
         display: flex; flex-direction: column; border: 1px solid #e2e8f0;
     }
-    .chart-wrapper svg { flex-grow: 1; font-family: var(--chart-font); }
+    /* SVG Risponde al ViewBox */
+    .chart-wrapper svg { width: 100%; height: auto; font-family: var(--chart-font); }
+    
     .chart-buttons { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 10; }
     .chart-btn {
       background: #f5f5f5; border: none; border-radius: 50%; width: 32px; height: 32px;
@@ -470,7 +472,7 @@
             ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, svgW, svgH);
             canvas.toBlob(function(blob) {
-                try { navigator.clipboard.write([new ClipboardItem({'image/png': blob})]); showToast('Immagine copiata (Alta Risoluzione)!', 'success'); } 
+                try { navigator.clipboard.write([new ClipboardItem({'image/png': blob})]); showToast('Copiato (formato immagine HD)!', 'success'); } 
                 catch (err) { showToast('Errore copia. Usa "Scarica SVG"', 'error'); }
                 URL.revokeObjectURL(url);
             });
@@ -776,7 +778,7 @@
             const chanData = data.filter(r => String(r[cols.canale]).toLowerCase() === val);
             const sortedForChart = [...chanData].sort((a,b)=>{ const pa=formatDate(a[cols.data]).split('/'), pb=formatDate(b[cols.data]).split('/'); return new Date(2000+parseInt(pa[2]),pa[1]-1,pa[0]) - new Date(2000+parseInt(pb[2]),pb[1]-1,pb[0]); });
 
-            // Accordion 1: D3 Charts (RIPRISTINATI ORIGINALI)
+            // Accordion 1: D3 Charts (RIPRISTINATI ORIGINALI CON LOGICA D3)
             const acc1 = document.createElement('details'); acc1.className='accordion-item'; acc1.open = true;
             acc1.innerHTML = `<summary><i class="fas fa-chart-bar"></i> Analisi Temporale</summary>`;
             const acc1Body = document.createElement('div'); acc1Body.className='accordion-content';
@@ -834,7 +836,7 @@
         return dates;
     }
 
-    // FUNZIONE DISEGNO GRAFICO D3 COMPLETA (RIPRISTINATA)
+    // FUNZIONE DISEGNO GRAFICO D3 COMPLETA (RIPRISTINATA e MODIFICATA PER 1200x453)
     function drawChart(containerId, data, metric, title, total, allDaysInMonth) {
         const container = d3.select("#" + containerId);
         container.html("");
@@ -847,13 +849,17 @@
         downloadBtn.append('span').attr('class', 'tooltip-chart').text('Scarica SVG');
 
         const margin = {top: 60, right: 20, bottom: 50, left: 50};
-        const width = container.node().getBoundingClientRect().width - margin.left - margin.right;
-        const height = container.node().getBoundingClientRect().height - margin.top - margin.bottom;
+        
+        // --- MODIFICA RICHIESTA: DIMENSIONI FISSE ---
+        const svgWidth = 1200;
+        const svgHeight = 453;
+        const width = svgWidth - margin.left - margin.right;
+        const height = svgHeight - margin.top - margin.bottom;
+        // ---------------------------------------------
         
         const svg = container.append("svg")
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+            .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`) // Coordinate interne fisse
+            .attr("preserveAspectRatio", "xMidYMid meet")
             .style("background-color", "transparent")
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
@@ -897,6 +903,7 @@
         const getBlob = () => {
              const cloned = svg.node().closest('svg').cloneNode(true);
              const s = d3.select(cloned); s.style('background', 'white');
+             // Per il download SVG, non servono dimensioni fisse bitmap, ma il viewBox garantisce l'aspect ratio
              return new Blob([new XMLSerializer().serializeToString(cloned)], {type:"image/svg+xml;charset=utf-8"});
         };
         downloadBtn.on('click', () => {
@@ -907,7 +914,10 @@
         copyBtn.on('click', () => {
             const img = new Image();
             img.onload = () => {
-                const c = document.createElement("canvas"); c.width = (width+70)*2; c.height = (height+110)*2;
+                // Per la copia, usiamo le dimensioni tassative 1200x453
+                const c = document.createElement("canvas"); 
+                c.width = 1200; 
+                c.height = 453;
                 c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
                 c.toBlob(b => { navigator.clipboard.write([new ClipboardItem({'image/png': b})]); 
                 const t = copyBtn.select('.tooltip-chart').node(); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); });
@@ -1016,7 +1026,8 @@
 
     function copyPostSvg() {
         const svgEl = document.querySelector('#pg-preview-container svg'); if(!svgEl) return;
-        // Usa la funzione copySvgAsImage per generare una PNG (compatibile PPT) con dimensioni 1:1
+        // Usa la funzione copySvgAsImage per generare una PNG (compatibile PPT) con le dimensioni esatte SVG (868x441)
+        // Stessa tecnica usata nei grafici temporali per garantire la copia "perfettamente funzionante"
         copySvgAsImage(svgEl, 868, 441);
     }
   </script>
