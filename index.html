@@ -308,10 +308,46 @@
 
     /* --- NUOVO CSS PER ANALISI LABEL --- */
     .tables-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 30px; }
-    .table-col { flex: 1; min-width: 400px; background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--shadow); }
-    .label-chart-wrapper { margin-top: 30px; background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--shadow); position: relative; }
+    /* Nuova classe per colonna di analisi (tabella + grafico) */
+    .analysis-column { flex: 1; min-width: 400px; display: flex; flex-direction: column; gap: 20px; }
+    
+    .table-col { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--shadow); }
+    .label-chart-wrapper { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--shadow); position: relative; }
     .label-chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
     .label-chart-title { font-size: 1.2rem; color: var(--primary); font-weight: 700; font-family: 'Avenir Next LT Pro', sans-serif; }
+
+    /* --- CSS PER CONTROLLI GRAFICO (SLIDER) --- */
+    .chart-controls-row {
+        padding: 10px 0;
+        margin-bottom: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 20px;
+        background: #fcfcfc;
+        border-bottom: 1px solid #eee;
+    }
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .control-group label {
+        font-weight: 600;
+        color: var(--primary);
+        font-size: 0.9rem;
+        display: flex;
+        justify-content: space-between;
+        width: 200px;
+    }
+    .range-slider {
+        width: 200px;
+        cursor: pointer;
+    }
+    .slider-val {
+        color: #555;
+        font-weight: normal;
+    }
 
   </style>
 </head>
@@ -822,7 +858,7 @@
         return svg;
     }
 
-    // --- 3. LABELS (MODIFICATA PER WRAPPING TESTO LUNGO) ---
+    // --- 3. LABELS (MODIFICATA CON CONTROLLI MANUALE FONT E WRAPPING SMART) ---
     function renderLabels(data) {
         const container = document.getElementById('tab-labels'); 
         container.innerHTML = '';
@@ -844,95 +880,164 @@
             totalInter += i;
         });
 
-        // Ordinamento (Top per tabelle e grafici)
         const sortedV = Object.entries(aggV).map(([k, v]) => ({ label: k, val: v })).sort((a, b) => b.val - a.val);
         const sortedI = Object.entries(aggI).map(([k, v]) => ({ label: k, val: v })).sort((a, b) => b.val - a.val);
 
-        // 2. Creazione Layout Tabelle Affiancate
-        const tablesRow = document.createElement('div');
-        tablesRow.className = 'tables-row';
+        // --- CREAZIONE STRUTTURA A DUE COLONNE ---
+        const mainRow = document.createElement('div');
+        mainRow.className = 'tables-row'; // Flex container
 
-        // Helper per creare colonna tabella con Totale
-        const createTableCol = (title, dataList, icon, totalVal) => {
-            const col = document.createElement('div');
-            col.className = 'table-col';
-            
-            const header = document.createElement('div');
-            header.className = 'table-header-actions';
-            header.innerHTML = `<h3>${icon} ${title}</h3>`;
-            
-            const tbl = document.createElement('table');
-            header.appendChild(createTableCopyBtn(tbl));
-            
-            col.appendChild(header);
-
-            tbl.innerHTML = `<thead><tr><th>Label</th><th>Valore</th></tr></thead><tbody></tbody>`;
-            
-            // Corpo Tabella - NUMERI COMPLETI (NON SEMPLIFICATI)
-            dataList.forEach(item => {
-                tbl.querySelector('tbody').innerHTML += `<tr><td>${item.label}</td><td>${formatNumberItalian(item.val)}</td></tr>`;
-            });
-
-            // Piede Tabella (Totale) - NUMERO SEMPLIFICATO (K/M)
-            const tfoot = document.createElement('tfoot');
-            const formattedTotal = formatSmartKM(totalVal);
-            const trTotal = document.createElement('tr');
-            trTotal.innerHTML = `<td>TOTALE</td><td><div style="display:flex; justify-content:space-between; align-items:center;"><span>${formattedTotal}</span></div></td>`;
-            // Aggiungo bottone copia per il totale
-            trTotal.querySelector('div').appendChild(createCopyBtn(formattedTotal));
-            
-            tfoot.appendChild(trTotal);
-            tbl.appendChild(tfoot);
-            
-            const tw = document.createElement('div');
-            tw.className = 'table-wrapper';
-            tw.style.maxHeight = '400px'; 
-            tw.appendChild(tbl);
-            col.appendChild(tw);
-            return col;
-        };
-
-        tablesRow.appendChild(createTableCol('Visualizzazioni', sortedV, '<i class="far fa-eye"></i>', totalVis));
-        tablesRow.appendChild(createTableCol('Interazioni', sortedI, '<i class="far fa-thumbs-up"></i>', totalInter));
-        container.appendChild(tablesRow);
-
-        // 3. Creazione Grafici SVG (Sotto le tabelle)
-        // Grafico Visualizzazioni
-        const chartVWrapper = document.createElement('div'); chartVWrapper.className = 'label-chart-wrapper';
-        chartVWrapper.innerHTML = `<div class="label-chart-header"><span class="label-chart-title">Top Label per Visualizzazioni</span><div class="card-actions" id="actions-chart-v"></div></div><div id="svg-container-v"></div>`;
-        container.appendChild(chartVWrapper);
-
-        // Grafico Interazioni
-        const chartIWrapper = document.createElement('div'); chartIWrapper.className = 'label-chart-wrapper';
-        chartIWrapper.innerHTML = `<div class="label-chart-header"><span class="label-chart-title">Top Label per Interazioni</span><div class="card-actions" id="actions-chart-i"></div></div><div id="svg-container-i"></div>`;
-        container.appendChild(chartIWrapper);
-
-        // Generazione SVG (Top 10 per leggibilità su grande formato)
-        const svgV = renderLabelSvg(sortedV.slice(0, 10), 'Visualizzazioni');
-        document.getElementById('svg-container-v').appendChild(svgV);
+        // --- COLONNA SINISTRA (VISUALIZZAZIONI) ---
+        const colVis = document.createElement('div');
+        colVis.className = 'analysis-column';
         
-        const svgI = renderLabelSvg(sortedI.slice(0, 10), 'Interazioni');
-        document.getElementById('svg-container-i').appendChild(svgI);
+        // 1. Tabella Visualizzazioni
+        const tableVWrapper = createTableCol('Visualizzazioni', sortedV, '<i class="far fa-eye"></i>', totalVis);
+        colVis.appendChild(tableVWrapper);
 
-        // Setup Bottoni Export
-        const setupExport = (svgEl, divId, filename) => {
-            const div = document.getElementById(divId);
+        // 2. Grafico Visualizzazioni (CON 2 SLIDER)
+        const chartVWrapper = document.createElement('div'); 
+        chartVWrapper.className = 'label-chart-wrapper';
+        chartVWrapper.innerHTML = `
+            <div class="label-chart-header">
+                <span class="label-chart-title">Top Label per Visualizzazioni</span>
+                <div class="card-actions" id="actions-chart-v"></div>
+            </div>
+            <div class="chart-controls-row">
+                <div class="control-group">
+                    <label><span><i class="fas fa-text-height"></i> Label</span> <span class="slider-val" id="val-v-label">1.0</span></label>
+                    <input type="range" class="range-slider" id="slider-v-label" min="0.5" max="1.5" step="0.05" value="1.0">
+                </div>
+                <div class="control-group">
+                    <label><span><i class="fas fa-hashtag"></i> Valori</span> <span class="slider-val" id="val-v-value">1.0</span></label>
+                    <input type="range" class="range-slider" id="slider-v-value" min="0.5" max="1.5" step="0.05" value="1.0">
+                </div>
+            </div>
+            <div id="svg-container-v"></div>`;
+        colVis.appendChild(chartVWrapper);
+
+        // --- COLONNA DESTRA (INTERAZIONI) ---
+        const colInt = document.createElement('div');
+        colInt.className = 'analysis-column';
+
+        // 1. Tabella Interazioni
+        const tableIWrapper = createTableCol('Interazioni', sortedI, '<i class="far fa-thumbs-up"></i>', totalInter);
+        colInt.appendChild(tableIWrapper);
+
+        // 2. Grafico Interazioni (CON 2 SLIDER)
+        const chartIWrapper = document.createElement('div'); 
+        chartIWrapper.className = 'label-chart-wrapper';
+        chartIWrapper.innerHTML = `
+            <div class="label-chart-header">
+                <span class="label-chart-title">Top Label per Interazioni</span>
+                <div class="card-actions" id="actions-chart-i"></div>
+            </div>
+            <div class="chart-controls-row">
+                <div class="control-group">
+                    <label><span><i class="fas fa-text-height"></i> Label</span> <span class="slider-val" id="val-i-label">1.0</span></label>
+                    <input type="range" class="range-slider" id="slider-i-label" min="0.5" max="1.5" step="0.05" value="1.0">
+                </div>
+                <div class="control-group">
+                    <label><span><i class="fas fa-hashtag"></i> Valori</span> <span class="slider-val" id="val-i-value">1.0</span></label>
+                    <input type="range" class="range-slider" id="slider-i-value" min="0.5" max="1.5" step="0.05" value="1.0">
+                </div>
+            </div>
+            <div id="svg-container-i"></div>`;
+        colInt.appendChild(chartIWrapper);
+
+        // --- APPEND DELLE COLONNE AL CONTAINER ---
+        mainRow.appendChild(colVis);
+        mainRow.appendChild(colInt);
+        container.appendChild(mainRow);
+
+        // --- FUNZIONE DI AGGIORNAMENTO GRAFICI ---
+        const updateChart = (type) => {
+            const isV = type === 'v';
             
-            // Tasto Copia
+            // Get Scales from DOM
+            const scaleLabel = parseFloat(document.getElementById(`slider-${type}-label`).value);
+            const scaleValue = parseFloat(document.getElementById(`slider-${type}-value`).value);
+            
+            // Update Text indicators
+            document.getElementById(`val-${type}-label`).innerText = scaleLabel.toFixed(2);
+            document.getElementById(`val-${type}-value`).innerText = scaleValue.toFixed(2);
+
+            const dataSet = isV ? sortedV.slice(0, 10) : sortedI.slice(0, 10);
+            const containerId = isV ? 'svg-container-v' : 'svg-container-i';
+            const actionId = isV ? 'actions-chart-v' : 'actions-chart-i';
+            const metric = isV ? 'Visualizzazioni' : 'Interazioni';
+            const filename = `Grafico_Label_${metric}.svg`;
+
+            // Clear previous
+            const containerDiv = document.getElementById(containerId);
+            containerDiv.innerHTML = '';
+            
+            // Render new
+            const svg = renderLabelSvg(dataSet, metric, scaleLabel, scaleValue);
+            containerDiv.appendChild(svg);
+
+            // Re-bind export buttons to current SVG
+            const actionDiv = document.getElementById(actionId);
+            actionDiv.innerHTML = '';
             const btnCopy = document.createElement('button'); btnCopy.className = 'action-btn'; 
             btnCopy.innerHTML = '<i class="far fa-copy"></i> Copia HQ';
-            btnCopy.onclick = () => copySvgHighRes(svgEl); 
+            btnCopy.onclick = () => copySvgHighRes(containerDiv.querySelector('svg')); 
             
-            // Tasto Download Trasparente
             const btnDown = document.createElement('button'); btnDown.className = 'action-btn yellow'; 
             btnDown.innerHTML = '<i class="fas fa-download"></i> SVG Trasparente';
-            btnDown.onclick = () => downloadTransparentSvg(svgEl, filename);
+            btnDown.onclick = () => downloadTransparentSvg(containerDiv.querySelector('svg'), filename);
 
-            div.append(btnCopy, btnDown);
+            actionDiv.append(btnCopy, btnDown);
         };
 
-        setupExport(svgV, 'actions-chart-v', 'Grafico_Label_Visualizzazioni.svg');
-        setupExport(svgI, 'actions-chart-i', 'Grafico_Label_Interazioni.svg');
+        // Inizializza i grafici (scale 1.0)
+        updateChart('v');
+        updateChart('i');
+
+        // Listener Slider
+        ['v', 'i'].forEach(t => {
+            document.getElementById(`slider-${t}-label`).addEventListener('input', () => updateChart(t));
+            document.getElementById(`slider-${t}-value`).addEventListener('input', () => updateChart(t));
+        });
+    }
+
+    // Helper per creare colonna tabella (Restituisce elemento DIV anziché appenderlo)
+    function createTableCol(title, dataList, icon, totalVal) {
+        const card = document.createElement('div');
+        card.className = 'table-col';
+        
+        const header = document.createElement('div');
+        header.className = 'table-header-actions';
+        header.innerHTML = `<h3>${icon} ${title}</h3>`;
+        
+        const tbl = document.createElement('table');
+        header.appendChild(createTableCopyBtn(tbl));
+        
+        card.appendChild(header);
+
+        tbl.innerHTML = `<thead><tr><th>Label</th><th>Valore</th></tr></thead><tbody></tbody>`;
+        
+        // Corpo Tabella
+        dataList.forEach(item => {
+            tbl.querySelector('tbody').innerHTML += `<tr><td>${item.label}</td><td>${formatNumberItalian(item.val)}</td></tr>`;
+        });
+
+        // Piede Tabella
+        const tfoot = document.createElement('tfoot');
+        const formattedTotal = formatSmartKM(totalVal);
+        const trTotal = document.createElement('tr');
+        trTotal.innerHTML = `<td>TOTALE</td><td><div style="display:flex; justify-content:space-between; align-items:center;"><span>${formattedTotal}</span></div></td>`;
+        trTotal.querySelector('div').appendChild(createCopyBtn(formattedTotal));
+        
+        tfoot.appendChild(trTotal);
+        tbl.appendChild(tfoot);
+        
+        const tw = document.createElement('div');
+        tw.className = 'table-wrapper';
+        tw.style.maxHeight = '400px'; 
+        tw.appendChild(tbl);
+        card.appendChild(tw);
+        return card;
     }
 
     // --- 4. TOPICS ---
@@ -1222,8 +1327,8 @@
         copySvgHighRes(svgEl);
     }
 
-    // --- GENERATORE SVG CUSTOM PER LABEL (MODIFICATO CON WRAPPING TESTO LUNGO) ---
-    function renderLabelSvg(data, metricName) {
+    // --- GENERATORE SVG CUSTOM PER LABEL (MODIFICATO CON SCALA MANUALE E WRAPPING SMART) ---
+    function renderLabelSvg(data, metricName, scaleLabel, scaleValue) {
         const svgns = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgns, 'svg');
         
@@ -1238,64 +1343,68 @@
         
         // Calcolo altezza riga dinamica
         const rowH = availableH / (data.length || 1);
+        const barHeight = rowH * 0.6; // Altezza barra relativa allo spazio riga
+
+        // --- FONT DINAMICO (BASE ~45% PROPORZIONALE * SCALA UTENTE) ---
+        const fontSizeRaw = Math.min(90, barHeight * 0.45) * scaleLabel;
+        const valueFontSize = Math.min(70, barHeight * 0.55) * scaleValue;
         
         svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
         svg.setAttribute('xmlns', svgns);
         svg.style.fontFamily = "'Avenir Next LT Pro', 'Segoe UI', sans-serif";
         
-        // SFONDO TRASPARENTE (Nessun rect di background)
-
         // Calcolo Scala
         const maxVal = data.length > 0 ? data[0].val : 1;
         const maxBarW = w * 0.50; 
         const startBarX = w * 0.35; 
 
+        // SOGLIA WRAPPING DINAMICA (AUMENTATA per evitare a capo indesiderati)
+        // Se userScaleLabel <= 1.0 (font normale o piccolo), permettiamo molti caratteri (55).
+        // Se l'utente ingrandisce (> 1.0), riduciamo la tolleranza.
+        const wrapThreshold = (scaleLabel <= 1.05) ? 60 : 30;
+
         data.forEach((item, i) => {
             const y = headerH + (i * rowH);
             const barW = (item.val / maxVal) * maxBarW;
-            const barHeight = rowH * 0.6; // Altezza barra relativa allo spazio riga
-
-            // 4. Label Text - LOGICA PER WRAPPING TESTO LUNGO
+            
+            // 4. Label Text
             const labelText = document.createElementNS(svgns, 'text');
             labelText.setAttribute('x', 20);
-            // Non impostiamo y qui se usiamo tspan, ma lo usiamo per il singolo
-            labelText.setAttribute('font-size', 90); 
+            labelText.setAttribute('font-size', fontSizeRaw); 
             labelText.setAttribute('fill', '#333');
 
-            // Logica di split se > 25 char
-            if(item.label.length > 25) {
+            // Logica di split
+            if(item.label.length > wrapThreshold) {
                  const words = item.label.split(' ');
                  let line1 = '', line2 = '';
-                 // Semplice ripartizione
                  for(let wd of words) {
-                    if((line1 + wd).length < 25) line1 += wd + ' ';
+                    if((line1 + wd).length < wrapThreshold) line1 += wd + ' ';
                     else line2 += wd + ' ';
                  }
-                 // Se la prima parola è lunghissima (fallback)
                  if(!line1 && words.length > 0) { line1 = words[0]; line2 = words.slice(1).join(' '); }
 
-                 // Riga 1 (Spostata verso l'alto rispetto al centro)
+                 // Riga 1 (Spostata verso l'alto)
                  const ts1 = document.createElementNS(svgns, 'tspan');
                  ts1.textContent = line1.trim();
                  ts1.setAttribute('x', 20);
-                 ts1.setAttribute('y', y + (rowH/2) - 10); 
+                 ts1.setAttribute('y', y + (rowH/2) - (fontSizeRaw * 0.15)); 
 
-                 // Riga 2 (Spostata verso il basso)
+                 // Riga 2
                  const ts2 = document.createElementNS(svgns, 'tspan');
                  ts2.textContent = line2.trim();
                  ts2.setAttribute('x', 20);
-                 ts2.setAttribute('dy', 90); // Interlinea stretta per font 90
+                 ts2.setAttribute('dy', fontSizeRaw * 1.1); 
 
                  labelText.appendChild(ts1);
                  labelText.appendChild(ts2);
             } else {
-                 // Testo breve: centrato normalmente
+                 // Testo breve: centrato
                  labelText.textContent = item.label;
-                 labelText.setAttribute('y', y + (rowH/2) + 25); 
+                 labelText.setAttribute('y', y + (rowH/2) + (fontSizeRaw * 0.35)); 
             }
             svg.appendChild(labelText);
             
-            // 3. The Bar - SPESSORE BORDO AUMENTATO
+            // 3. The Bar
             const rect = document.createElementNS(svgns, 'rect');
             rect.setAttribute('x', startBarX);
             rect.setAttribute('y', y + (rowH/2) - (barHeight/2));
@@ -1307,13 +1416,12 @@
             rect.setAttribute('rx', 15);
             svg.appendChild(rect);
 
-            // 5. Value Text - POSIZIONATO A LATO DELLA BARRA + FONT SPESSO
+            // 5. Value Text
             const valText = document.createElementNS(svgns, 'text');
-            // Posizione X: Fine barra + piccolo margine (es. 30px)
             valText.setAttribute('x', startBarX + Math.max(barW, 5) + 30);
-            valText.setAttribute('y', y + (rowH/2) + 25);
+            valText.setAttribute('y', y + (rowH/2) + (valueFontSize * 0.35));
             valText.setAttribute('text-anchor', 'start'); 
-            valText.setAttribute('font-size', 70);
+            valText.setAttribute('font-size', valueFontSize);
             valText.setAttribute('fill', '#0431ae'); // Blu
             valText.setAttribute('font-weight', 'bold'); // Più spesso
             valText.textContent = formatSmartKM(item.val); // Smart Format
