@@ -4,10 +4,18 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Social Report</title>
+  <title>Dashboard Social Report Unificata</title>
+  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
   <style>
     :root {
+      /* Colori App 1 (Base) */
       --primary: #00529F;
       --primary-hover: #003e7e;
       --bg: #f4f6f8;
@@ -16,8 +24,13 @@
       --card-bg: #fff;
       --border-radius: 12px;
       --shadow: 0 4px 12px rgba(0,0,0,0.05);
-      --icon-size: 1.5rem; 
-      --icon-color: #00529F;
+      
+      /* Variabili per Grafici D3 (App 2) */
+      --chart-font: 'Nunito Sans', sans-serif;
+      --header-total-grey: #3a3a3a;
+      --chart-text-grey: #7b7b7a;
+      --chart-title-blue: #0431AE;
+      --chart-bar-blue: #bfd7fd;
     }
     
     body { 
@@ -42,6 +55,8 @@
     }
     header h1 { margin: 0; font-size: 1.4rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
     
+    .header-actions { display: flex; gap: 10px; }
+
     .container { max-width: 1400px; margin: 2rem auto; padding: 0 1.5rem; }
     
     /* Area Upload */
@@ -62,8 +77,7 @@
     .upload-icon { font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem; display: block; }
 
     /* Tabs */
-    .tabs-container { display: none; }
-    .tabs-header { display: flex; gap: 10px; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; }
+    .tabs-header { display: flex; gap: 10px; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; }
     .tab-btn {
       padding: 10px 20px;
       background: #fff;
@@ -79,21 +93,36 @@
     }
     .tab-btn:hover { background: #f8fafc; color: var(--primary); }
     .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    
+    .tabs-container { display: none; }
     .tab-content { display: none; animation: fadeIn 0.4s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Executive Button */
-    #exec-btn { 
-      background-color: #27ae60; color: white; border: none; padding: 8px 16px; 
+    /* Buttons */
+    .btn-header { 
+      border: none; padding: 8px 16px; 
       border-radius: 6px; font-weight: 600; cursor: pointer; display: none; font-size: 0.9rem;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white;
     }
-    #exec-btn:hover { background-color: #219150; }
+    #json-exec-btn { background-color: #27ae60; }
+    #json-exec-btn:hover { background-color: #219150; }
 
-    /* Cards Gen */
+    .action-btn {
+        background-color: #fff; border: 1px solid #d1d5db; color: #4b5563;
+        padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+        cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .action-btn:hover { border-color: var(--primary); color: var(--primary); background: #f8fafc; }
+    .action-btn.excel { color: #166534; border-color: #86efac; background: #f0fdf4; }
+    .action-btn.excel:hover { background: #dcfce7; }
+    .action-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); }
+
+    /* Cards e Layout Gen */
     .card { background: var(--card-bg); padding: 1.5rem; margin-bottom: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); border: 1px solid #e1e4e8; }
-    .card h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
+    .card h2 { margin: 0; color: var(--primary); font-size: 1.2rem; }
+    .card-actions { display: flex; gap: 10px; }
 
     /* Stats Grid */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; }
@@ -104,152 +133,103 @@
     }
     .stat-card:hover { transform: translateY(-3px); border-left-color: var(--primary); }
     .stat-label { font-size: 0.85rem; color: var(--text-light); text-transform: uppercase; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 0.5rem; }
-    .stat-label i { font-size: 1.2rem; color: var(--icon-color); }
+    .stat-label i { font-size: 1.2rem; color: var(--primary); }
     .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
 
-    /* --- STILE POST SOCIAL (CARD LAYOUT) --- */
-    .post-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-      gap: 20px;
-    }
-    
-    .post-card {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.2s, box-shadow 0.2s;
-      overflow: hidden;
-    }
-    .post-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-      border-color: #cbd5e0;
-    }
-
-    /* Header Post: Icona, Label, Data */
-    .post-header {
-      padding: 12px 16px;
-      background: #fdfdfd;
-      border-bottom: 1px solid #f0f0f0;
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-    }
-    .post-channel-icon {
-      font-size: 24px;
-      color: var(--primary);
-      margin-top: 2px;
-    }
-    .post-meta {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .post-label { font-weight: 700; color: #2d3748; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between; }
-    .post-date { font-size: 0.8rem; color: #718096; display: flex; align-items: center; gap: 6px; }
-    
-    /* Body Post: Topic, Copy */
-    .post-body {
-      padding: 16px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .post-topic {
-      display: inline-block;
-      background: #eef2f7;
-      color: var(--primary);
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      align-self: flex-start;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 5px;
-      /* Flex per allineare il tasto copia */
-      display: inline-flex; align-items: center; gap: 6px;
-    }
-    .post-text {
-      font-size: 0.95rem;
-      color: #4a5568;
-      white-space: pre-wrap; /* Mantiene a capo */
-      background: #fff;
-      line-height: 1.5;
-      position: relative;
-    }
-    .post-text-wrapper {
-        position: relative;
-    }
-    .post-text-copy-btn {
-        position: absolute;
-        top: 0; right: 0;
-    }
-
-    /* Footer Post: Metriche */
-    .post-footer {
-      padding: 12px 16px;
-      background: #f8fafc;
-      border-top: 1px solid #e2e8f0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .post-metrics {
-      display: flex;
-      gap: 15px;
-    }
-    .metric-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #4a5568;
-    }
-    .metric-item i { color: #a0aec0; }
-    .metric-item.views i { color: #3498db; }
-    .metric-item.likes i { color: #e74c3c; }
-
-    /* Bottone Link Esterno */
-    .post-link-btn {
-      color: #718096;
-      transition: color 0.2s;
-      font-size: 1.1rem;
-    }
-    .post-link-btn:hover { color: var(--primary); }
-
-    /* --- TASTO COPIA & UTILS --- */
-    .copy-btn {
-      background: transparent; 
-      color: #cbd5e0; 
-      border: none; 
-      padding: 2px;
-      font-size: 0.9rem; 
-      cursor: pointer; 
-      transition: all 0.2s ease-in-out;
-      opacity: 0.6;
-    }
-    .copy-btn:hover { color: var(--primary); transform: scale(1.15); opacity: 1; }
-    /* Nelle card, rendiamo i copy btn visibili al click o hover del contenitore */
-    .post-card:hover .copy-btn { opacity: 1; color: #a0aec0; }
-    .post-card .copy-btn:hover { color: var(--primary); }
-
-    .save-table, .save-channel-table { background: #f1c40f; color: #333; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 600; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; margin-bottom: 1rem; }
-    .save-table:hover { background: #d4ac0d; }
-
-    /* Tabella Classica per Overview/Istituzionale */
+    /* Tabelle Generiche */
+    .table-header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
     .table-wrapper { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 1rem; }
     table { width: 100%; border-collapse: collapse; min-width: 600px; }
     th { background: #f8fafc; color: #4a5568; font-weight: 700; padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
     td { padding: 12px; border-bottom: 1px solid #edf2f7; vertical-align: middle; font-size: 0.9rem; }
     tr:hover td { background-color: #f7fafc; }
+
+    /* Accordion */
+    details.accordion-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        background: #fff;
+        overflow: hidden;
+    }
+    details.accordion-item summary {
+        background: #f8fafc;
+        padding: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        outline: none;
+        list-style: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--text);
+    }
+    details.accordion-item summary::-webkit-details-marker { display: none; }
+    details.accordion-item summary::after {
+        content: '\f078'; font-family: "Font Awesome 6 Free"; font-weight: 900; transition: transform 0.2s;
+    }
+    details.accordion-item[open] summary::after { transform: rotate(180deg); }
+    details.accordion-item[open] summary { border-bottom: 1px solid #e2e8f0; color: var(--primary); }
+    .accordion-content { padding: 1.5rem; animation: fadeIn 0.3s ease; }
+
+    /* Nested Accordion (Tables) */
+    .nested-accordion { margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 6px; }
+    .nested-accordion summary { background: #fff; font-size: 0.9rem; color: #555; padding: 10px; }
+    .nested-accordion[open] summary { border-bottom: 1px solid #eee; color: var(--primary); }
+    .nested-content { padding: 15px; background: #fafafa; }
+
+    /* Post Cards */
+    .post-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+    .post-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s; overflow: hidden;
+    }
+    .post-card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-color: #cbd5e0; }
+    .post-header { padding: 12px 16px; background: #fdfdfd; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 12px; }
+    .post-channel-icon { font-size: 24px; color: var(--primary); margin-top: 2px; }
+    .post-meta { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .post-label { font-weight: 700; color: #2d3748; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; } /* Force CSS Uppercase visual too */
+    .post-date { font-size: 0.8rem; color: #718096; display: flex; align-items: center; gap: 6px; }
+    .post-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .post-topic { display: inline-flex; align-items: center; gap: 6px; background: #eef2f7; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; /* No text-transform here to keep original case */ }
+    .post-text { font-size: 0.95rem; color: #4a5568; white-space: pre-wrap; background: #fff; line-height: 1.5; position: relative; }
+    .post-footer { padding: 12px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; }
+    .post-metrics { display: flex; gap: 15px; }
+    .metric-item { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 600; color: #4a5568; }
+    .metric-item i { color: #a0aec0; }
+    .metric-item.views i { color: #3498db; }
+    .metric-item.likes i { color: #e74c3c; }
+    .post-link-btn { color: #718096; transition: color 0.2s; font-size: 1.1rem; }
+    .post-link-btn:hover { color: var(--primary); }
+
+    /* Grafici D3 */
+    .charts-container { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; }
+    .chart-wrapper {
+        position: relative; background-color: #fff; border-radius: var(--border-radius);
+        box-shadow: var(--shadow); padding: 10px; height: 325px;
+        display: flex; flex-direction: column; border: 1px solid #e2e8f0;
+    }
+    .chart-wrapper svg { flex-grow: 1; font-family: var(--chart-font); }
+    .chart-buttons { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 10; }
+    .chart-btn {
+      background: #f5f5f5; border: none; border-radius: 50%; width: 32px; height: 32px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.3s; position: relative;
+    }
+    .chart-btn:hover { background: #e0e0e0; }
+    .tooltip-chart { position: absolute; top: -32px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+    .tooltip-chart.show { opacity: 1; }
+    
+    .panels-row { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 0; }
+    .panel-col { flex: 1; min-width: 300px; }
+
+    /* Utils */
+    .copy-btn { background: transparent; color: #cbd5e0; border: none; padding: 2px; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; opacity: 0.6; }
+    .copy-btn:hover { color: var(--primary); transform: scale(1.15); opacity: 1; }
+    
+    .save-table { background: #f1c40f; color: #333; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 600; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+    .save-table:hover { background: #d4ac0d; }
 
     /* Toast */
     #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
@@ -258,13 +238,21 @@
     .toast.error { background: #e74c3c; }
     @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
+    #chan-sel-container { margin-bottom: 1.5rem; }
+    #chan-sel { padding: 10px; font-size: 1rem; border-radius: 6px; border: 1px solid #cbd5e0; width: 100%; max-width: 300px; background: #fff; }
+
+    .feed-controls { display: flex; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px; }
+    .feed-sort-group { display: flex; gap: 5px; }
+
   </style>
 </head>
 <body>
 
   <header>
-    <h1><i class="fas fa-chart-line"></i> Dashboard Report Social</h1>
-    <button id="exec-btn"><i class="fas fa-file-code"></i> JSON Executive</button>
+    <h1><i class="fas fa-chart-line"></i> Dashboard Report Social Unificata</h1>
+    <div class="header-actions">
+        <button id="json-exec-btn" class="btn-header"><i class="fas fa-file-contract"></i> JSON Executive</button>
+    </div>
   </header>
   
   <div id="toast-container"></div>
@@ -280,26 +268,31 @@
       <div class="tabs-header">
         <button class="tab-btn active" onclick="switchTab('tab-overview')"><i class="fas fa-home"></i> Panoramica</button>
         <button class="tab-btn" onclick="switchTab('tab-instit')"><i class="fas fa-building"></i> Istituzionale</button>
-        <button class="tab-btn" onclick="switchTab('tab-topics')"><i class="fas fa-tags"></i> Argomenti</button>
+        <button class="tab-btn" onclick="switchTab('tab-labels')"><i class="fas fa-tag"></i> Analisi per Label</button>
+        <button class="tab-btn" onclick="switchTab('tab-topics')"><i class="fas fa-tags"></i> Top Argomenti</button>
         <button class="tab-btn" onclick="switchTab('tab-channels')"><i class="fas fa-share-alt"></i> Canali</button>
       </div>
 
       <div id="tab-overview" class="tab-content active"></div>
       <div id="tab-instit" class="tab-content"></div>
+      <div id="tab-labels" class="tab-content"></div>
       <div id="tab-topics" class="tab-content"></div>
       <div id="tab-channels" class="tab-content"></div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
+    // --- VARIABILI & CONFIG ---
     const fileInput = document.getElementById('file-input');
     const uploadLabel = document.getElementById('upload-label');
-    const execBtn = document.getElementById('exec-btn');
+    const jsonExecBtn = document.getElementById('json-exec-btn');
     const mainContent = document.getElementById('main-content');
     let workbookData = null;
-    let latestExecutiveData = null;
+    let rawData = [];
+    let filteredData = [];
+    let cols = {};
 
+    // --- UTILS ---
     function showToast(msg, type) {
         const c = document.getElementById('toast-container');
         const icon = type === 'success' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-circle"></i>';
@@ -311,88 +304,125 @@
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
-        const map = {'tab-overview':0, 'tab-instit':1, 'tab-topics':2, 'tab-channels':3};
-        document.querySelectorAll('.tab-btn')[map[tabId]].classList.add('active');
+        const buttons = document.querySelectorAll('.tab-btn');
+        if(tabId === 'tab-overview') buttons[0].classList.add('active');
+        if(tabId === 'tab-instit') buttons[1].classList.add('active');
+        if(tabId === 'tab-labels') buttons[2].classList.add('active');
+        if(tabId === 'tab-topics') buttons[3].classList.add('active');
+        if(tabId === 'tab-channels') buttons[4].classList.add('active');
     }
+
+    // --- COPY TABLE FUNCTION ---
+    function copyTable(tableEl) {
+        if(!tableEl) return;
+        let txt = "";
+        const headers = Array.from(tableEl.querySelectorAll("thead th")).map(th => th.textContent.trim());
+        txt += headers.join("\t") + "\n";
+        const rows = tableEl.querySelectorAll("tbody tr");
+        rows.forEach(tr => {
+            const cells = Array.from(tr.querySelectorAll("td")).map(td => {
+                return td.innerText.replace(/content_copy|Copiato!/g, '').trim();
+            });
+            txt += cells.join("\t") + "\n";
+        });
+        
+        navigator.clipboard.writeText(txt).then(() => {
+            showToast("Tabella copiata negli appunti!", "success");
+        }).catch(() => {
+            showToast("Errore durante la copia della tabella", "error");
+        });
+    }
+
+    function createTableCopyBtn(tableEl) {
+        const btn = document.createElement('button');
+        btn.className = 'action-btn';
+        btn.innerHTML = '<i class="far fa-copy"></i> Copia Tabella';
+        btn.title = 'Copia contenuto tabella per Excel';
+        btn.onclick = () => copyTable(tableEl);
+        return btn;
+    }
+
+    // --- DATA PARSING ---
+    const findCol = (regex, firstRow) => Object.keys(firstRow || {}).find(h => new RegExp(regex, 'i').test(h));
 
     fileInput.addEventListener('change', e => {
       const file = e.target.files[0]; if (!file) return;
       uploadLabel.innerHTML = `⏳ Elaborazione di <strong>${file.name}</strong>...`;
       const reader = new FileReader();
+      
       reader.onload = evt => {
         try {
             workbookData = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
-            const data = XLSX.utils.sheet_to_json(workbookData.Sheets[workbookData.SheetNames[0]], { raw: false });
-            renderReport(data);
+            rawData = XLSX.utils.sheet_to_json(workbookData.Sheets[workbookData.SheetNames[0]], { defval: '' });
+            
+            if (rawData.length > 0) {
+                cols = {
+                    data: findCol('dat', rawData[0]),
+                    canale: findCol('canal', rawData[0]),
+                    vis: findCol('visualizz', rawData[0]),
+                    inter: findCol('interaz', rawData[0]),
+                    label: findCol('label', rawData[0]),
+                    campagna: findCol('campagn', rawData[0]),
+                    arg: findCol('argoment', rawData[0]) || 'Argomento',
+                    copy: findCol('copy', rawData[0]) || 'Copy',
+                    link: findCol('link', rawData[0]) || 'Link',
+                    like: findCol('like', rawData[0]) || 'Like e reazioni',
+                    cond: findCol('condivisioni', rawData[0]) || 'Condivisioni'
+                };
+            }
+
+            if (!cols.campagna) throw new Error("Colonna Campagna non trovata");
+            filteredData = rawData.filter(r => String(r[cols.campagna]).trim().toLowerCase() === 'editoriale');
+
+            renderAll(filteredData);
+
             mainContent.style.display = 'block';
-            execBtn.style.display = 'inline-block';
+            jsonExecBtn.style.display = 'inline-block';
             uploadLabel.innerHTML = `✅ <strong>${file.name}</strong> caricato con successo.`;
             showToast('Dati elaborati correttamente', 'success');
         } catch (err) {
             console.error(err);
-            uploadLabel.innerHTML = `❌ Errore nel file.`;
+            uploadLabel.innerHTML = `❌ Errore nel file: ${err.message}`;
             showToast('Errore lettura file Excel', 'error');
         }
       };
       reader.readAsArrayBuffer(file);
     });
 
-    execBtn.addEventListener('click', () => {
-        if (!latestExecutiveData) return;
-        const now = new Date();
-        const filename = `ES2_${now.toISOString().slice(0,19).replace(/[-:T]/g,'_')}.json`;
-        const blob = new Blob([JSON.stringify(latestExecutiveData, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    });
+    function renderAll(data) {
+        renderOverview(data);
+        renderInstitutional(data);
+        renderLabels(data);
+        renderTopics(data);
+        renderChannels(data);
+    }
 
-    // Helpers
+    // --- HELPERS FORMATTAZIONE ---
     function formatDate(t) { if(!t) return ''; let d,m,y; if(/^\d{4}-\d{2}-\d{2}$/.test(t))[y,m,d]=t.split('-'); else if(/^\d{2}\/\d{2}\/\d{4}$/.test(t))[d,m,y]=t.split('/'); else{const dt=new Date(t);if(!isNaN(dt)){d=dt.getDate();m=dt.getMonth()+1;y=dt.getFullYear();}else return t;} return `${d.toString().padStart(2,'0')}/${m.toString().padStart(2,'0')}/${y.toString().slice(-2)}`; }
     function formatNumber(n) { n=Number(n)||0; if(n<1000)return n.toString(); if(n<1000000)return `${Math.round(n/1000)}K`; return `${(n/1000000).toFixed(2).replace('.',',')}M`; }
     function formatNumberForJson(n) { let v=Number(n)||0; if(v>=1000000)return (v/1000000).toFixed(2).replace('.',',')+"M"; if(v>=1000)return Math.round(v/1000)+"K"; return v.toString().replace('.',','); }
+    function formatKValue(num) {
+        num = +num || 0;
+        if (num >= 1000000) return parseFloat((num/1000000).toFixed(2)).toString().replace('.', ',') + 'M';
+        if (num >= 1000) return Math.round(num/1000).toString() + 'K';
+        return num.toString();
+    }
+    function formatNumberItalian(num) { return (+num || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
 
-    // --- FUNZIONE COPIA ROBUSTA ---
-    function performCopy(text, btnElement) {
-        if (!text) { showToast('Nessun testo da copiare', 'error'); return; }
-        const onSuccess = () => {
-            btnElement.innerHTML = '<i class="fas fa-check"></i>';
-            btnElement.style.color = '#27ae60';
-            setTimeout(() => { 
-                btnElement.innerHTML = '<i class="far fa-copy"></i>'; 
-                btnElement.style.color = '';
-            }, 1500);
+    function createCopyBtn(textToCopy) {
+        const b = document.createElement('button'); b.className = 'copy-btn'; b.innerHTML = '<i class="far fa-copy"></i>';
+        b.onclick = (e) => { 
+            e.stopPropagation(); 
+            navigator.clipboard.writeText(String(textToCopy)).then(() => {
+                b.innerHTML = '<i class="fas fa-check"></i>'; b.style.color = '#27ae60';
+                setTimeout(() => { b.innerHTML = '<i class="far fa-copy"></i>'; b.style.color = ''; }, 1500);
+            });
         };
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopy(text, onSuccess));
-        } else {
-            fallbackCopy(text, onSuccess);
-        }
-    }
-
-    function fallbackCopy(text, onSuccess) {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed"; textArea.style.left = "-9999px"; textArea.style.top = "0";
-        document.body.appendChild(textArea);
-        textArea.focus(); textArea.select();
-        try { document.execCommand('copy'); onSuccess(); } 
-        catch (err) { showToast('Impossibile copiare il testo', 'error'); }
-        document.body.removeChild(textArea);
-    }
-
-    function createCopyBtn(textToCopy, tooltip = "Copia") {
-        const b = document.createElement('button'); 
-        b.className = 'copy-btn'; 
-        b.innerHTML = '<i class="far fa-copy"></i>'; 
-        b.title = tooltip;
-        const safeText = String(textToCopy !== undefined && textToCopy !== null ? textToCopy : "");
-        b.onclick = (e) => { e.stopPropagation(); performCopy(safeText, b); };
         return b;
     }
 
     function getChannelIcon(name) {
-        const n = name.toLowerCase();
+        const n = String(name).toLowerCase();
         if(n.includes('facebook')) return '<i class="fab fa-facebook"></i>';
         if(n.includes('instagram')) return '<i class="fab fa-instagram"></i>';
         if(n.includes('linkedin')) return '<i class="fab fa-linkedin"></i>';
@@ -402,288 +432,576 @@
         return '<i class="fas fa-share-alt"></i>';
     }
 
-    // MAIN RENDER
-    function renderReport(data) {
-      const filtered = data.filter(r=>String(r.Campagna).trim().toLowerCase()==='editoriale');
-      const tabs = { ov: document.getElementById('tab-overview'), inst: document.getElementById('tab-instit'), top: document.getElementById('tab-topics'), chan: document.getElementById('tab-channels') };
-      Object.values(tabs).forEach(t => t.innerHTML = '');
+    // --- JSON EXECUTIVE LOGIC ---
+    jsonExecBtn.addEventListener('click', () => {
+        if (!filteredData || filteredData.length === 0) {
+            showToast("Nessun dato caricato!", "error");
+            return;
+        }
 
-      // 1. OVERVIEW
-      const counts = { fb:0, ig:0, wa:0, tw:0, li:0, yt:0 };
-      filtered.forEach(r => {
-          const c = r.Canale.trim().toLowerCase();
-          if(c.includes('facebook')) counts.fb++; else if(c.includes('instagram')) counts.ig++; else if(c==='whatsapp') counts.wa++; else if(c.includes('twitter') || c.includes('x')) counts.tw++; else if(c.includes('linkedin')) counts.li++; else if(c.includes('youtube')) counts.yt++;
-      });
-      const totals = { 
-          'Post Totali': {val: filtered.length, icon: '<i class="fas fa-layer-group"></i>'}, 
+        // 1. Calcolo Volumi (Ambito 2)
+        const counts = { fb:0, ig:0, wa:0, tw:0, li:0, yt:0 };
+        filteredData.forEach(r => {
+            const c = String(r[cols.canale]).toLowerCase();
+            if(c.includes('facebook')) counts.fb++; 
+            else if(c.includes('twitter')||c.includes('x')) counts.tw++; 
+            else if(c.includes('linkedin')) counts.li++; 
+            else if(c.includes('instagram')) counts.ig++; 
+            else if(c.includes('youtube')) counts.yt++; 
+            else if(c.includes('whatsapp')) counts.wa++;
+        });
+
+        // 2. Calcolo Best Performers (Ambito 3)
+        const topics = {};
+        filteredData.forEach(r => {
+            const a = r[cols.arg] || 'Altro'; 
+            if(!topics[a]) topics[a] = { arg: a, v: 0 };
+            topics[a].v += Number(r[cols.vis] || 0);
+        });
+        const sortedTopics = Object.values(topics).sort((a,b) => b.v - a.v).slice(0, 3);
+        while(sortedTopics.length < 3) sortedTopics.push({ arg: "N/D", v: 0 });
+
+        // 3. Calcolo Istituzionale
+        const colIst = findCol('istituzionale', rawData[0]) || 'Istituzionale';
+        const instData = filteredData.filter(r => String(r[colIst]).trim() === '1');
+        
+        const instStats = {
+            n: instData.length,
+            v: instData.reduce((s,r) => s + (Number(r[cols.vis])||0), 0),
+            i: instData.reduce((s,r) => s + (Number(r[cols.inter])||0) + (Number(r[cols.like])||0), 0)
+        };
+
+        // 4. Costruzione JSON
+        const customJson = {
+            "__COMMENTO_SEZIONE_VOLUMI__": "--- AMBITO 2: Volumi Post ---",
+            "Numero post Facebook": formatNumberForJson(counts.fb),
+            "Numero post Instagram": formatNumberForJson(counts.ig),
+            "Numero post Linkedin": formatNumberForJson(counts.li),
+            "Numero post X (Twitter)": formatNumberForJson(counts.tw),
+            "Numero post Whatsapp": formatNumberForJson(counts.wa),
+            "Numero post Youtube": formatNumberForJson(counts.yt),
+
+            "__COMMENTO_SEZIONE_BEST__": "--- AMBITO 3: Best Performer ---",
+            "Argomenti più visualizzati 1": sortedTopics[0].arg,
+            "Visualizzazione Argomenti più visualizzati 1": formatNumberForJson(sortedTopics[0].v),
+            "Argomenti più visualizzati 2": sortedTopics[1].arg,
+            "Visualizzazione Argomenti più visualizzati 2": formatNumberForJson(sortedTopics[1].v),
+            "Argomenti più visualizzati 3": sortedTopics[2].arg,
+            "Visualizzazione Argomenti più visualizzati 3": formatNumberForJson(sortedTopics[2].v),
+
+            "__COMMENTO_SEZIONE_ISTITUZIONALI__": "--- DATI ISTITUZIONALI ---",
+            "Numero post istituzionali": formatNumberForJson(instStats.n),
+            "Visualizzazione post istituzionali": formatNumberForJson(instStats.v),
+            "Like + interazoni post istituzionali": formatNumberForJson(instStats.i)
+        };
+
+        const now = new Date();
+        const filename = `Executive_Report_${now.toISOString().slice(0,19).replace(/[-:T]/g,'_')}.json`;
+        const blob = new Blob([JSON.stringify(customJson, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    });
+
+    // --- 1. OVERVIEW ---
+    function renderOverview(data) {
+        const container = document.getElementById('tab-overview');
+        container.innerHTML = '';
+        const counts = { fb:0, ig:0, wa:0, tw:0, li:0, yt:0 };
+        data.forEach(r => {
+            const c = String(r[cols.canale]).toLowerCase();
+            if(c.includes('facebook')) counts.fb++; else if(c.includes('instagram')) counts.ig++; else if(c.includes('whatsapp')) counts.wa++; else if(c.includes('twitter') || c.includes('x')) counts.tw++; else if(c.includes('linkedin')) counts.li++; else if(c.includes('youtube')) counts.yt++;
+        });
+        const totals = { 
+          'Post Totali': {val: data.length, icon: '<i class="fas fa-layer-group"></i>'}, 
           'Facebook': {val: counts.fb, icon: getChannelIcon('facebook')}, 
           'Instagram': {val: counts.ig, icon: getChannelIcon('instagram')}, 
           'LinkedIn': {val: counts.li, icon: getChannelIcon('linkedin')}, 
           'X (Twitter)': {val: counts.tw, icon: getChannelIcon('x')}, 
           'YouTube': {val: counts.yt, icon: getChannelIcon('youtube')}, 
           'WhatsApp': {val: counts.wa, icon: getChannelIcon('whatsapp')} 
-      };
-
-      const ovCard = document.createElement('div'); ovCard.className = 'card';
-      ovCard.innerHTML = '<h2><i class="fas fa-chart-pie"></i> Volumi di Pubblicazione</h2>';
-      const grid = document.createElement('div'); grid.className = 'stats-grid';
-      Object.entries(totals).forEach(([k, obj]) => {
-          const card = document.createElement('div'); card.className = 'stat-card';
-          const valDiv = document.createElement('div'); valDiv.className = 'stat-value';
-          valDiv.textContent = obj.val; valDiv.appendChild(createCopyBtn(obj.val));
-          card.innerHTML = `<span class="stat-label">${obj.icon} ${k}</span>`;
-          card.appendChild(valDiv); grid.appendChild(card);
-      });
-      ovCard.appendChild(grid); tabs.ov.appendChild(ovCard);
-
-      // 2. ISTITUZIONALI
-      const istit = filtered.filter(r=>String(r.Istituzionale).trim()==='1');
-      const kpiIst = {
-          'N. Post': istit.length,
-          'Visualizzazioni': istit.reduce((s,r)=>s+(Number(r.Visualizzazioni)||0),0),
-          'Interazioni': istit.reduce((s,r)=>s+(Number(r.Interazioni)||0),0),
-          'Like/Reazioni': istit.reduce((s,r)=>s+(Number(r['Like e reazioni'])||0),0),
-          'Condivisioni': istit.reduce((s,r)=>s+(Number(r.Condivisioni)||0),0)
-      };
-
-      const istCard = document.createElement('div'); istCard.className='card';
-      istCard.innerHTML = '<h2><i class="fas fa-university"></i> KPI Istituzionali</h2>';
-      const istGrid = document.createElement('div'); istGrid.className = 'stats-grid';
-      Object.entries(kpiIst).forEach(([k,v]) => {
-          const card = document.createElement('div'); card.className = 'stat-card';
-          const valDiv = document.createElement('div'); valDiv.className = 'stat-value';
-          const fmt = formatNumber(v); valDiv.textContent = fmt; valDiv.appendChild(createCopyBtn(fmt));
-          card.innerHTML = `<span class="stat-label">${k}</span>`;
-          card.appendChild(valDiv); istGrid.appendChild(card);
-      });
-      istCard.appendChild(istGrid);
-
-      // Best Perf Table (Table view for precision)
-      const agg={};istit.forEach(r=>{const a=r.Argomento||'ND';if(!agg[a])agg[a]={v:0,i:0,l:0,c:0,lnk:r.Link};agg[a].v+=Number(r.Visualizzazioni)||0;agg[a].i+=Number(r.Interazioni)||0;agg[a].l+=Number(r['Like e reazioni'])||0;agg[a].c+=Number(r.Condivisioni)||0;});
-      const top5=Object.entries(agg).map(([a,d])=>({arg:a,...d})).sort((a,b)=>b.v-a.v).slice(0,5);
-
-      const perfDiv = document.createElement('div'); perfDiv.style.marginTop='2rem';
-      perfDiv.innerHTML = '<h3><i class="fas fa-trophy"></i> Best Performers (Top 5 per visualizzazioni)</h3>';
-      const tblWrap = document.createElement('div'); tblWrap.className='table-wrapper';
-      const tbl = document.createElement('table');
-      tbl.innerHTML = '<thead><tr><th>Argomento</th><th>Visualizzazioni</th><th>Interazioni</th><th>Like</th><th>Link</th></tr></thead><tbody></tbody>';
-      top5.forEach(o => {
-          const tr = document.createElement('tr');
-          [[o.arg],[formatNumber(o.v)],[formatNumber(o.i)],[formatNumber(o.l)]].forEach(([val]) => {
-              const td = document.createElement('td'); td.textContent = val; td.appendChild(createCopyBtn(val)); tr.appendChild(td);
-          });
-          const tdLink = document.createElement('td');
-          tdLink.innerHTML = `<a href="${o.lnk}" target="_blank" class="link-btn"><i class="fas fa-external-link-alt"></i> Apri</a>`;
-          tr.appendChild(tdLink);
-          tbl.querySelector('tbody').appendChild(tr);
-      });
-      tblWrap.appendChild(tbl); perfDiv.appendChild(tblWrap);
-      istCard.appendChild(perfDiv); tabs.inst.appendChild(istCard);
-
-      // 3. ARGOMENTI
-      const topics={}; filtered.forEach(r=>{const a=r.Argomento||'Altro'; const v=Number(r.Visualizzazioni)||0; if(!topics[a])topics[a]={n:0,v:0}; topics[a].n++; topics[a].v+=v;});
-      const topTopics = Object.entries(topics).map(([a,d])=>({arg:a,...d})).sort((a,b)=>b.v-a.v).slice(0,10);
-
-      const topicCard = document.createElement('div'); topicCard.className='card';
-      topicCard.innerHTML = '<h2><i class="fas fa-list-ol"></i> Top 10 Argomenti</h2>';
-      const tblTWrap = document.createElement('div'); tblTWrap.className='table-wrapper';
-      const tblT = document.createElement('table');
-      tblT.innerHTML = '<thead><tr><th>Argomento</th><th>N. Post</th><th>Visualizzazioni Totali</th></tr></thead><tbody></tbody>';
-      topTopics.forEach(t => {
-          const tr = document.createElement('tr');
-          const fmtV = formatNumber(t.v);
-          [[t.arg], [t.n], [fmtV]].forEach(([val]) => {
-             const td = document.createElement('td'); td.textContent = val; td.appendChild(createCopyBtn(val)); tr.appendChild(td);
-          });
-          tblT.querySelector('tbody').appendChild(tr);
-      });
-      tblTWrap.appendChild(tblT); topicCard.appendChild(tblTWrap); tabs.top.appendChild(topicCard);
-
-      // EXECUTIVE DATA GENERATION
-      const safeTop = [...topTopics]; while(safeTop.length<3) safeTop.push({arg:"",v:0});
-      latestExecutiveData = {
-          "Numero post Facebook": formatNumberForJson(counts.fb),
-          "Numero post X (Twitter)": formatNumberForJson(counts.tw),
-          "Numero post Linkedin": formatNumberForJson(counts.li),
-          "Numero post Instagram": formatNumberForJson(counts.ig),
-          "Numero post Youtube": formatNumberForJson(counts.yt),
-          "Numero post Whatsapp": formatNumberForJson(counts.wa),
-          "Argomenti più visualizzati 1": safeTop[0].arg, "Visualizzazione Argomenti più visualizzati 1": formatNumberForJson(safeTop[0].v),
-          "Argomenti più visualizzati 2": safeTop[1].arg, "Visualizzazione Argomenti più visualizzati 2": formatNumberForJson(safeTop[1].v),
-          "Argomenti più visualizzati 3": safeTop[2].arg, "Visualizzazione Argomenti più visualizzati 3": formatNumberForJson(safeTop[2].v),
-          "Numero post istituzionali": formatNumberForJson(kpiIst['N. Post']),
-          "Visualizzazione post istituzionali": formatNumberForJson(kpiIst['Visualizzazioni']),
-          "Like + interazoni post istituzionali": formatNumberForJson(kpiIst['Interazioni'] + kpiIst['Like/Reazioni'])
-      };
-
-      // 4. CANALI (SOCIAL CARD VIEW - SORTED DROPDOWN)
-      const chanCard = document.createElement('div'); chanCard.className='card';
-      chanCard.innerHTML = `<h2><i class="fas fa-filter"></i> Feed di Canale</h2>`;
-      
-      const selDiv = document.createElement('div'); selDiv.className='channel-selector';
-      selDiv.innerHTML = '<select id="chan-sel" style="padding:10px; font-size:1rem; border-radius:6px; border:1px solid #cbd5e0; width: 100%; max-width: 300px;"><option value="">-- Seleziona un Canale --</option></select>';
-      
-      // Calcolo Conteggio Post per Canale per ordinamento
-      const chanCounts = {};
-      filtered.forEach(r => {
-        const c = r.Canale.trim().toLowerCase();
-        if(!chanCounts[c]) chanCounts[c] = 0;
-        chanCounts[c]++;
-      });
-      // Convertiamo in array e ordiniamo per conteggio decrescente
-      const sortedChannels = Object.entries(chanCounts).sort((a,b) => b[1] - a[1]);
-
-      sortedChannels.forEach(([cName, count]) => {
-          const opt = document.createElement('option'); 
-          opt.value = cName; 
-          // Aggiungiamo il conteggio alla label per chiarezza
-          opt.textContent = `${cName.toUpperCase()} (${count})`;
-          selDiv.querySelector('select').appendChild(opt);
-      });
-      chanCard.appendChild(selDiv);
-      
-      const chanContent = document.createElement('div'); chanContent.style.marginTop='1.5rem';
-      chanCard.appendChild(chanContent);
-      
-      selDiv.querySelector('select').addEventListener('change', (e) => {
-          const c = e.target.value; chanContent.innerHTML=''; if(!c) return;
-          const posts = filtered.filter(r=>r.Canale.trim().toLowerCase()===c);
-          renderChannelCards(posts, chanContent, c);
-      });
-      tabs.chan.appendChild(chanCard);
+        };
+        const card = document.createElement('div'); card.className = 'card';
+        const header = document.createElement('div'); header.className = 'card-header';
+        header.innerHTML = '<h2><i class="fas fa-chart-pie"></i> Volumi di Pubblicazione</h2>';
+        const btnExp = document.createElement('button');
+        btnExp.className = 'action-btn excel';
+        btnExp.innerHTML = '<i class="fas fa-file-excel"></i> Scarica Excel Panoramica';
+        btnExp.onclick = () => {
+            const exportData = Object.entries(totals).map(([k, v]) => ({ "Canale/Metric": k.replace(/<[^>]*>/g, '').trim(), "Valore": v.val }));
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Panoramica");
+            XLSX.writeFile(wb, "Report_Panoramica.xlsx");
+        };
+        header.appendChild(btnExp);
+        card.appendChild(header);
+        const grid = document.createElement('div'); grid.className = 'stats-grid';
+        Object.entries(totals).forEach(([k, obj]) => {
+            const sc = document.createElement('div'); sc.className = 'stat-card';
+            sc.innerHTML = `<span class="stat-label">${obj.icon} ${k}</span><div class="stat-value">${obj.val}</div>`;
+            sc.querySelector('.stat-value').appendChild(createCopyBtn(obj.val));
+            grid.appendChild(sc);
+        });
+        card.appendChild(grid); container.appendChild(card);
     }
 
-    // --- NUOVA VISTA A CARTE PER I CANALI ---
-    function renderChannelCards(posts, container, channelName) {
-        const createSec = (title, metric, iconClass) => {
-            const wrap = document.createElement('div'); wrap.style.marginBottom='3rem';
-            const sorted = [...posts].sort((a,b)=>(Number(b[metric])||0)-(Number(a[metric])||0));
-            
-            // Intestazione sezione e tasto download
-            const headDiv = document.createElement('div'); 
-            headDiv.style.display='flex'; headDiv.style.justifyContent='space-between'; headDiv.style.alignItems='center'; headDiv.style.marginBottom='1rem';
-            headDiv.innerHTML = `<h3><i class="${iconClass}"></i> ${title}</h3>`;
-            const btnEx = document.createElement('button'); btnEx.className='save-channel-table'; btnEx.style.marginBottom='0'; btnEx.innerHTML='<i class="fas fa-file-excel"></i> Excel';
-            btnEx.onclick = () => {
-                const ws = XLSX.utils.json_to_sheet(sorted.map(r=>({Label:r.Label, Arg:r.Argomento, Data:formatDate(r.Data), Copy:r.Copy, Vis:r.Visualizzazioni, Int:r.Interazioni, Link:r.Link})));
-                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dati');
-                XLSX.writeFile(wb, `${channelName}_${metric}.xlsx`);
-            };
-            headDiv.appendChild(btnEx); wrap.appendChild(headDiv);
-
-            // Contenitore Griglia
-            const gridDiv = document.createElement('div'); 
-            gridDiv.className = 'post-grid';
-            
-            let limit = 6; // Mostra 6 card per volta
-
-            const renderCards = () => {
-                gridDiv.innerHTML = '';
-                sorted.slice(0, limit).forEach(r => {
-                    const label = r.Label || 'Account';
-                    const arg = r.Argomento || 'Generale';
-                    const date = formatDate(r.Data);
-                    const copyText = r.Copy || '';
-                    const visF = formatNumber(r.Visualizzazioni);
-                    const intF = formatNumber(r.Interazioni);
-                    const link = r.Link || '#';
-
-                    // Creazione DOM Card
-                    const card = document.createElement('div');
-                    card.className = 'post-card';
-
-                    // 1. Header
-                    const header = document.createElement('div'); header.className='post-header';
-                    header.innerHTML = `<div class="post-channel-icon">${getChannelIcon(channelName)}</div>`;
-                    
-                    const meta = document.createElement('div'); meta.className='post-meta';
-                    
-                    const labelRow = document.createElement('div'); labelRow.className='post-label';
-                    labelRow.textContent = label; 
-                    labelRow.appendChild(createCopyBtn(label, 'Copia Label'));
-                    
-                    const dateRow = document.createElement('div'); dateRow.className='post-date';
-                    dateRow.textContent = date;
-                    dateRow.appendChild(createCopyBtn(date, 'Copia Data'));
-
-                    meta.appendChild(labelRow); meta.appendChild(dateRow); header.appendChild(meta);
-
-                    // 2. Body
-                    const body = document.createElement('div'); body.className='post-body';
-                    
-                    const topicSpan = document.createElement('span'); topicSpan.className='post-topic';
-                    topicSpan.textContent = arg;
-                    topicSpan.appendChild(createCopyBtn(arg, 'Copia Argomento'));
-
-                    const textDiv = document.createElement('div'); textDiv.className='post-text-wrapper';
-                    const textP = document.createElement('div'); textP.className='post-text';
-                    textP.textContent = copyText; // Usare textContent per sicurezza
-                    
-                    // Aggiungo tasto copia per il testo (absolute top right)
-                    const copyBodyBtn = createCopyBtn(copyText, 'Copia Testo Post');
-                    copyBodyBtn.style.float = 'right';
-                    copyBodyBtn.style.marginLeft = '8px';
-                    
-                    // Assemblaggio Body
-                    body.appendChild(topicSpan);
-                    textP.prepend(copyBodyBtn); // Mette il bottone all'inizio del blocco testo
-                    body.appendChild(textP);
-
-                    // 3. Footer
-                    const footer = document.createElement('div'); footer.className='post-footer';
-                    
-                    const metrics = document.createElement('div'); metrics.className='post-metrics';
-                    
-                    const mVis = document.createElement('div'); mVis.className='metric-item views';
-                    mVis.innerHTML = '<i class="far fa-eye"></i> ' + visF;
-                    mVis.appendChild(createCopyBtn(visF));
-                    
-                    const mInt = document.createElement('div'); mInt.className='metric-item likes';
-                    mInt.innerHTML = '<i class="far fa-thumbs-up"></i> ' + intF;
-                    mInt.appendChild(createCopyBtn(intF));
-
-                    metrics.appendChild(mVis); metrics.appendChild(mInt);
-
-                    const linkBtn = document.createElement('a'); linkBtn.className='post-link-btn';
-                    linkBtn.href = link; linkBtn.target = '_blank';
-                    linkBtn.innerHTML = '<i class="fas fa-external-link-alt"></i>';
-                    linkBtn.title = "Apri post originale";
-
-                    footer.appendChild(metrics); footer.appendChild(linkBtn);
-
-                    // Append Parts
-                    card.appendChild(header);
-                    card.appendChild(body);
-                    card.appendChild(footer);
-
-                    gridDiv.appendChild(card);
-                });
-            };
-            
-            renderCards();
-            wrap.appendChild(gridDiv);
-
-            // Bottoni "Mostra Altri"
-            if(sorted.length > 6) {
-                const ctrls = document.createElement('div'); 
-                ctrls.style.marginTop='20px'; ctrls.style.display='flex'; ctrls.style.justifyContent='center'; ctrls.style.gap='15px';
-                
-                const btnMore = document.createElement('button'); btnMore.className='save-table'; btnMore.style.background='#fff'; btnMore.style.border='1px solid #ccc';
-                btnMore.textContent = `Carica altri 6`;
-                
-                const btnAll = document.createElement('button'); btnAll.className='save-table'; btnAll.style.background='#fff'; btnAll.style.border='1px solid #ccc';
-                btnAll.textContent = `Mostra tutti (${sorted.length})`;
-                
-                btnMore.onclick = () => { limit += 6; renderCards(); if(limit>=sorted.length) ctrls.style.display='none'; };
-                btnAll.onclick = () => { limit = sorted.length; renderCards(); ctrls.style.display='none'; };
-                
-                ctrls.appendChild(btnMore); ctrls.appendChild(btnAll); wrap.appendChild(ctrls);
-            }
-            container.appendChild(wrap);
+    // --- 2. ISTITUZIONALE ---
+    function renderInstitutional(data) {
+        const container = document.getElementById('tab-instit');
+        container.innerHTML = '';
+        const colIst = findCol('istituzionale', data[0]) || 'Istituzionale';
+        const institData = data.filter(r => String(r[colIst]).trim() === '1');
+        const agg={};
+        institData.forEach(r=>{
+            const a=r[cols.arg]||'ND';
+            if(!agg[a]) agg[a]={v:0, i:0, l:0, lnk:r[cols.link]};
+            agg[a].v+=Number(r[cols.vis])||0; agg[a].i+=Number(r[cols.inter])||0; agg[a].l+=Number(r[cols.like])||0;
+        });
+        const top5=Object.entries(agg).map(([a,d])=>({arg:a,...d})).sort((a,b)=>b.v-a.v).slice(0,5);
+        const kpi = {
+            'N. Post': institData.length,
+            'Visualizzazioni': institData.reduce((s,r)=>s+(Number(r[cols.vis])||0),0),
+            'Interazioni': institData.reduce((s,r)=>s+(Number(r[cols.inter])||0),0),
+            'Like/Reazioni': institData.reduce((s,r)=>s+(Number(r[cols.like])||0),0),
+            'Condivisioni': institData.reduce((s,r)=>s+(Number(r[cols.cond])||0),0)
         };
+        const card = document.createElement('div'); card.className = 'card';
+        const header = document.createElement('div'); header.className = 'card-header';
+        header.innerHTML = '<h2><i class="fas fa-university"></i> KPI Istituzionali</h2>';
+        const btnExp = document.createElement('button');
+        btnExp.className = 'action-btn excel';
+        btnExp.innerHTML = '<i class="fas fa-file-excel"></i> Scarica Report Istituzionali (Excel)';
+        btnExp.onclick = () => {
+            const kpiData = [
+                { Metrica: 'N. Post', Valore: kpi['N. Post'] },
+                { Metrica: 'Visualizzazioni', Valore: kpi['Visualizzazioni'] },
+                { Metrica: 'Interazioni', Valore: kpi['Interazioni'] },
+                { Metrica: 'Like/Reazioni', Valore: kpi['Like/Reazioni'] },
+                { Metrica: 'Condivisioni', Valore: kpi['Condivisioni'] }
+            ];
+            const ws1 = XLSX.utils.json_to_sheet(kpiData);
+            const bestPerfData = top5.map(item => ({
+                "Argomento": item.arg, "Visualizzazioni": item.v, "Interazioni": item.i, "Like": item.l
+            }));
+            const ws2 = XLSX.utils.json_to_sheet(bestPerfData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws1, "Dati Complessivi");
+            XLSX.utils.book_append_sheet(wb, ws2, "Best Performers");
+            XLSX.writeFile(wb, "Report_Istituzionali.xlsx");
+        };
+        header.appendChild(btnExp);
+        card.appendChild(header);
+        const grid = document.createElement('div'); grid.className = 'stats-grid';
+        Object.entries(kpi).forEach(([k,v]) => {
+            const sc = document.createElement('div'); sc.className = 'stat-card';
+            const fmt = formatNumber(v);
+            sc.innerHTML = `<span class="stat-label">${k}</span><div class="stat-value">${fmt}</div>`;
+            sc.querySelector('.stat-value').appendChild(createCopyBtn(fmt));
+            grid.appendChild(sc);
+        });
+        card.appendChild(grid);
+        const tblDiv = document.createElement('div'); tblDiv.style.marginTop='2rem';
+        const tblHeadDiv = document.createElement('div'); tblHeadDiv.className = 'table-header-actions';
+        // MODIFICA RICHIESTA: Rinomina Tabella Istituzionale
+        tblHeadDiv.innerHTML = '<h3><i class="fas fa-trophy"></i> Best Performers (Top 5 Visualizzazioni)</h3>';
+        const tbl = document.createElement('table');
+        tblHeadDiv.appendChild(createTableCopyBtn(tbl));
+        tblDiv.appendChild(tblHeadDiv);
+        const tblWrap = document.createElement('div'); tblWrap.className='table-wrapper';
+        tbl.innerHTML = '<thead><tr><th>Argomento</th><th>Visualizzazioni</th><th>Interazioni</th><th>Like</th><th>Link</th></tr></thead><tbody></tbody>';
+        top5.forEach(o => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${o.arg}</td><td>${formatNumber(o.v)}</td><td>${formatNumber(o.i)}</td><td>${formatNumber(o.l)}</td>`;
+            tr.querySelectorAll('td:not(:last-child)').forEach(td => td.appendChild(createCopyBtn(td.textContent.replace('K','').replace('M',''))));
+            const tdL = document.createElement('td'); 
+            if(o.lnk) tdL.innerHTML = `<a href="${o.lnk}" target="_blank"><i class="fas fa-external-link-alt"></i></a>`;
+            tr.appendChild(tdL);
+            tbl.querySelector('tbody').appendChild(tr);
+        });
+        tblWrap.appendChild(tbl); tblDiv.appendChild(tblWrap); card.appendChild(tblDiv); container.appendChild(card);
+    }
+
+    // --- 3. ANALISI PER LABEL ---
+    function renderLabels(data) {
+        const container = document.getElementById('tab-labels');
+        container.innerHTML = '';
+        const totalVis = data.reduce((a,c)=>a+Number(c[cols.vis]||0),0);
+        const totalInter = data.reduce((a,c)=>a+Number(c[cols.inter]||0),0);
+        const aggV={}, aggI={};
+        data.forEach(r=>{
+            const l = r[cols.label]||'Nessuna';
+            aggV[l] = (aggV[l]||0) + Number(r[cols.vis]||0);
+            aggI[l] = (aggI[l]||0) + Number(r[cols.inter]||0);
+        });
+        const visCard = document.createElement('div'); visCard.className='card';
+        const vHead = document.createElement('div'); vHead.className='card-header';
+        vHead.innerHTML = `<h2><i class="far fa-eye"></i> Analisi Visualizzazioni <span style="font-size:0.9em; color:#666">Totale: ${formatKValue(totalVis)}</span></h2>`;
+        visCard.appendChild(vHead);
+        const tblVWrap = document.createElement('div'); tblVWrap.className='table-wrapper';
+        const tblV = document.createElement('table');
+        const actionDivV = document.createElement('div'); actionDivV.className = 'table-header-actions';
+        actionDivV.style.justifyContent = 'flex-end';
+        actionDivV.appendChild(createTableCopyBtn(tblV));
+        visCard.appendChild(actionDivV);
+        tblV.innerHTML = '<thead><tr><th>Label</th><th>Visualizzazioni</th></tr></thead><tbody></tbody>';
+        Object.entries(aggV).sort((a,b)=>b[1]-a[1]).forEach(([l,v]) => {
+            const tr=document.createElement('tr'); const val = formatNumberItalian(v);
+            tr.innerHTML = `<td>${l}</td><td style="text-align:right">${val}</td>`;
+            tr.cells[1].appendChild(createCopyBtn(val)); tblV.querySelector('tbody').appendChild(tr);
+        });
+        tblVWrap.appendChild(tblV); visCard.appendChild(tblVWrap); container.appendChild(visCard);
         
-        createSec('Top per Visualizzazioni', 'Visualizzazioni', 'fas fa-eye');
-        createSec('Top per Interazioni', 'Interazioni', 'fas fa-thumbs-up');
+        const intCard = document.createElement('div'); intCard.className='card';
+        const iHead = document.createElement('div'); iHead.className='card-header';
+        iHead.innerHTML = `<h2><i class="far fa-thumbs-up"></i> Analisi Interazioni <span style="font-size:0.9em; color:#666">Totale: ${formatKValue(totalInter)}</span></h2>`;
+        intCard.appendChild(iHead);
+        const tblIWrap = document.createElement('div'); tblIWrap.className='table-wrapper';
+        const tblI = document.createElement('table');
+        const actionDivI = document.createElement('div'); actionDivI.className = 'table-header-actions';
+        actionDivI.style.justifyContent = 'flex-end';
+        actionDivI.appendChild(createTableCopyBtn(tblI));
+        intCard.appendChild(actionDivI);
+        tblI.innerHTML = '<thead><tr><th>Label</th><th>Interazioni</th></tr></thead><tbody></tbody>';
+        Object.entries(aggI).sort((a,b)=>b[1]-a[1]).forEach(([l,v]) => {
+            const tr=document.createElement('tr'); const val = formatNumberItalian(v);
+            tr.innerHTML = `<td>${l}</td><td style="text-align:right">${val}</td>`;
+            tr.cells[1].appendChild(createCopyBtn(val)); tblI.querySelector('tbody').appendChild(tr);
+        });
+        tblIWrap.appendChild(tblI); intCard.appendChild(tblIWrap); container.appendChild(intCard);
+    }
+
+    // --- 4. TOPICS ---
+    function renderTopics(data) {
+        const container = document.getElementById('tab-topics');
+        container.innerHTML = '';
+        const topics={};
+        data.forEach(r=>{
+            const a=r[cols.arg]||'Altro'; 
+            if(!topics[a]) topics[a]={n:0, v:0};
+            topics[a].n++; topics[a].v+=Number(r[cols.vis]||0);
+        });
+        const topTopics = Object.entries(topics).map(([a,d])=>({arg:a,...d})).sort((a,b)=>b.v-a.v).slice(0,10);
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML = '<h2><i class="fas fa-list-ol"></i> Top 10 Argomenti</h2>';
+        const tbl = document.createElement('table');
+        tbl.innerHTML = '<thead><tr><th>Argomento</th><th>N. Post</th><th>Visualizzazioni Totali</th></tr></thead><tbody></tbody>';
+        topTopics.forEach(t => {
+            const tr = document.createElement('tr');
+            const fV = formatNumber(t.v);
+            tr.innerHTML = `<td>${t.arg}</td><td>${t.n}</td><td>${fV}</td>`;
+            tr.querySelectorAll('td').forEach(td => td.appendChild(createCopyBtn(td.textContent.replace('K','').replace('M',''))));
+            tbl.querySelector('tbody').appendChild(tr);
+        });
+        const w = document.createElement('div'); w.className='table-wrapper'; w.appendChild(tbl);
+        card.appendChild(w); container.appendChild(card);
+    }
+
+    // --- 5. CHANNELS ---
+    function renderChannels(data) {
+        const container = document.getElementById('tab-channels');
+        container.innerHTML = '';
+        const counts = {};
+        data.forEach(r => { const c = String(r[cols.canale]).toLowerCase(); counts[c] = (counts[c]||0) + 1; });
+        const sortedChans = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML = '<h2><i class="fas fa-filter"></i> Dettaglio Canale</h2>';
+        const selDiv = document.createElement('div'); selDiv.id = 'chan-sel-container';
+        const sel = document.createElement('select'); sel.id='chan-sel';
+        sel.innerHTML = '<option value="">-- Seleziona un Canale --</option>';
+        sortedChans.forEach(([k,v]) => { sel.innerHTML += `<option value="${k}">${k.toUpperCase()} (${v})</option>`; });
+        selDiv.appendChild(sel);
+        card.appendChild(selDiv);
+        const contentArea = document.createElement('div'); contentArea.id = 'chan-content-area';
+        card.appendChild(contentArea);
+        container.appendChild(card);
+
+        sel.addEventListener('change', (e) => {
+            const val = e.target.value;
+            contentArea.innerHTML = '';
+            if(!val) return;
+            const chanData = data.filter(r => String(r[cols.canale]).toLowerCase() === val);
+            const sortedForChart = [...chanData].sort((a,b)=>{
+                const pa=formatDate(a[cols.data]).split('/'), pb=formatDate(b[cols.data]).split('/');
+                return new Date(2000+parseInt(pa[2]),pa[1]-1,pa[0]) - new Date(2000+parseInt(pb[2]),pb[1]-1,pb[0]);
+            });
+
+            // Accordion 1
+            const acc1 = document.createElement('details'); acc1.className='accordion-item'; acc1.open = true;
+            acc1.innerHTML = `<summary><i class="fas fa-chart-bar"></i> Analisi Grafica e Temporale</summary>`;
+            const acc1Body = document.createElement('div'); acc1Body.className='accordion-content';
+            const d3Container = document.createElement('div'); d3Container.className = 'charts-container';
+            d3Container.innerHTML = `<div class="chart-wrapper" id="visChartContainer"></div><div class="chart-wrapper" id="interChartContainer"></div>`;
+            acc1Body.appendChild(d3Container);
+            
+            // MODIFICA RICHIESTA: Tabelle in Sotto Accordion (Chiuso Default)
+            const subAcc = document.createElement('details');
+            subAcc.className = 'nested-accordion';
+            subAcc.innerHTML = '<summary>Mostra Tabelle Dati Giornalieri</summary>';
+            const subContent = document.createElement('div'); subContent.className = 'nested-content';
+
+            const panels = document.createElement('div'); panels.className='panels-row';
+            const p1 = document.createElement('div'); p1.className='panel-col';
+            p1.innerHTML = '<div class="table-header-actions" style="margin-bottom:8px; font-weight:600; color:var(--primary)"><span>Visualizzazioni Giornaliere</span></div><div class="table-wrapper"><table id="tableVisChan"><thead><tr><th>Data</th><th>Vis</th></tr></thead><tbody></tbody></table></div>';
+            p1.querySelector('.table-header-actions').appendChild(createTableCopyBtn(p1.querySelector('table')));
+            const p2 = document.createElement('div'); p2.className='panel-col';
+            p2.innerHTML = '<div class="table-header-actions" style="margin-bottom:8px; font-weight:600; color:var(--primary)"><span>Interazioni Giornaliere</span></div><div class="table-wrapper"><table id="tableInterChan"><thead><tr><th>Data</th><th>Int</th></tr></thead><tbody></tbody></table></div>';
+            p2.querySelector('.table-header-actions').appendChild(createTableCopyBtn(p2.querySelector('table')));
+            panels.appendChild(p1); panels.appendChild(p2); 
+            
+            subContent.appendChild(panels);
+            subAcc.appendChild(subContent);
+            acc1Body.appendChild(subAcc);
+
+            acc1.appendChild(acc1Body); contentArea.appendChild(acc1);
+            setTimeout(() => { renderApp2ChartsAndTables(sortedForChart, val); }, 50); 
+
+            // Accordion 2 (Feed con Ripristino Tasti e Logica CAPS)
+            const acc2 = document.createElement('details'); acc2.className='accordion-item';
+            acc2.innerHTML = `<summary><i class="fas fa-stream"></i> Feed dei Post</summary>`;
+            const acc2Body = document.createElement('div'); acc2Body.className='accordion-content';
+            renderChannelCards(chanData, acc2Body, val);
+            acc2.appendChild(acc2Body); contentArea.appendChild(acc2);
+        });
+    }
+
+    function renderApp2ChartsAndTables(data, channelName) {
+        const tv = document.getElementById('tableVisChan').querySelector('tbody');
+        const ti = document.getElementById('tableInterChan').querySelector('tbody');
+        tv.innerHTML=''; ti.innerHTML='';
+        data.forEach(r => {
+            const d = formatDate(r[cols.data]);
+            const v = formatNumberItalian(r[cols.vis]);
+            const i = formatNumberItalian(r[cols.inter]);
+            tv.innerHTML += `<tr><td>${d}</td><td style="text-align:right">${v}</td></tr>`;
+            ti.innerHTML += `<tr><td>${d}</td><td style="text-align:right">${i}</td></tr>`;
+        });
+        if (data.length === 0) return;
+        const visTot = data.reduce((a,c)=>a+Number(c[cols.vis]||0),0);
+        const intTot = data.reduce((a,c)=>a+Number(c[cols.inter]||0),0);
+        const firstD = formatDate(data[0][cols.data]);
+        const parts = firstD.split('/');
+        const year = 2000 + parseInt(parts[2]);
+        const month = parseInt(parts[1]) - 1;
+        const allDays = getAllDaysInMonth(year, month);
+        drawChart('visChartContainer', data, cols.vis, 'VISUALIZZAZIONI', visTot, allDays);
+        drawChart('interChartContainer', data, cols.inter, 'INTERAZIONI', intTot, allDays);
+    }
+
+    function getAllDaysInMonth(year, month) {
+        const date = new Date(year, month, 1);
+        const dates = [];
+        while (date.getMonth() === month) {
+            const d = ('0' + date.getDate()).slice(-2);
+            const m = ('0' + (date.getMonth() + 1)).slice(-2);
+            dates.push(`${d}/${m}/${year}`);
+            date.setDate(date.getDate() + 1);
+        }
+        return dates;
+    }
+
+    function drawChart(containerId, data, metric, title, total, allDaysInMonth) {
+        const container = d3.select("#" + containerId);
+        container.html("");
+        const buttons = container.append('div').attr('class', 'chart-buttons');
+        const copyBtn = buttons.append('button').attr('class', 'chart-btn')
+            .html('<i class="material-icons" style="font-size: 20px;">content_copy</i>');
+        copyBtn.append('span').attr('class', 'tooltip-chart').text('Copia immagine');
+        const downloadBtn = buttons.append('button').attr('class', 'chart-btn')
+            .html('<i class="material-icons" style="font-size: 20px;">download</i>');
+        downloadBtn.append('span').attr('class', 'tooltip-chart').text('Scarica SVG');
+
+        const margin = {top: 60, right: 20, bottom: 50, left: 50};
+        const width = container.node().getBoundingClientRect().width - margin.left - margin.right;
+        const height = container.node().getBoundingClientRect().height - margin.top - margin.bottom;
+        
+        const svg = container.append("svg")
+            .attr("width", "100%")
+            .attr("height", "100%")
+            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+            .style("background-color", "transparent")
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+        const mesi = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+        const groupedData = d3.group(data, d => {
+            const fd = formatDate(d[cols.data]); const p = fd.split('/'); return `${p[0]}/${p[1]}/${2000+parseInt(p[2])}`;
+        });
+        const tickDates = allDaysInMonth.filter(d => parseInt(d.split('/')[0]) % 2 !== 0);
+        const x = d3.scaleBand().domain(allDaysInMonth).range([0, width]).padding(0.3);
+        const dailyTotals = allDaysInMonth.map(date => d3.sum(groupedData.get(date) || [], v => +v[metric]));
+        const yMax = d3.max(dailyTotals);
+        const y = d3.scaleLinear().domain([0, yMax > 0 ? yMax * 1.1 : 1]).range([height, 0]);
+
+        svg.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x).tickValues(tickDates).tickFormat(d => {
+                    const parts = d.split('/'); const mIdx = parseInt(parts[1], 10) - 1; return `${parseInt(parts[0])}-${mesi[mIdx]}`;
+        }).tickSize(0)).call(g => g.select(".domain").remove());
+
+        const yAxisG = svg.append("g").attr("class", "y-axis").call(d3.axisLeft(y).ticks(5).tickFormat(d => formatKValue(d)));
+        yAxisG.call(g => g.select(".domain").remove());
+        yAxisG.selectAll(".tick line").clone().attr("x2", width).attr("stroke", "#e0e0e0").attr("stroke-opacity", 0.7);
+        yAxisG.selectAll(".tick line").attr("stroke", "none");
+
+        const header = svg.append("g").attr("class", "chart-header").attr("transform", `translate(${-40}, 0)`);
+        const titleText = header.append("text").attr("x", 0).attr("y", -30);
+        titleText.append("tspan").attr("class", "title-main").text(title);
+        titleText.append("tspan").attr("class", "title-total").attr("dx", "15").text(`Totale: ${formatKValue(total)}`);
+        header.append("line").attr("class", "header-line").attr("x1", 0).attr("x2", width / 2).attr("y1", -18).attr("y2", -18).attr("stroke-width", 1);
+
+        svg.selectAll(".bar").data(allDaysInMonth).enter().append("rect").attr("class", "bar")
+           .attr("x", d => x(d)).attr("y", d => y(d3.sum(groupedData.get(d) || [], v => +v[metric])))
+           .attr("width", x.bandwidth()).attr("height", d => height - y(d3.sum(groupedData.get(d) || [], v => +v[metric])));
+
+        const styles = { tm: { fill: '#0431AE', s: '22px', w: '800'}, tt: { fill: '#3a3a3a', s: '22px', w: '300'}, bar: { fill: '#bfd7fd'}, at: { fill: '#7b7b7a', s: '13px'}, hl: { stroke: '#0431AE'} };
+        svg.select('.title-main').style('font-size', styles.tm.s).style('font-weight', styles.tm.w).style('fill', styles.tm.fill);
+        svg.select('.title-total').style('font-size', styles.tt.s).style('font-weight', styles.tt.w).style('fill', styles.tt.fill);
+        svg.selectAll('.bar').style('fill', styles.bar.fill);
+        svg.selectAll('.x-axis .tick text, .y-axis .tick text').style('fill', styles.at.fill).style('font-size', styles.at.s);
+        svg.select('.header-line').style('stroke', styles.hl.stroke);
+
+        const getBlob = () => {
+             const cloned = svg.node().closest('svg').cloneNode(true);
+             const s = d3.select(cloned); s.style('background', 'white');
+             return new Blob([new XMLSerializer().serializeToString(cloned)], {type:"image/svg+xml;charset=utf-8"});
+        };
+        downloadBtn.on('click', () => {
+             const url = URL.createObjectURL(getBlob());
+             const a = document.createElement("a"); a.href = url; a.download = `grafico-${title}.svg`;
+             document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        });
+        copyBtn.on('click', () => {
+            const img = new Image();
+            img.onload = () => {
+                const c = document.createElement("canvas"); c.width = (width+70)*2; c.height = (height+110)*2;
+                c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+                c.toBlob(b => { navigator.clipboard.write([new ClipboardItem({'image/png': b})]); 
+                const t = copyBtn.select('.tooltip-chart').node(); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); });
+            };
+            img.src = URL.createObjectURL(getBlob());
+        });
+    }
+
+    function renderChannelCards(posts, container, channelName) {
+        container.innerHTML = '';
+
+        // Controlli Header
+        const ctrlDiv = document.createElement('div');
+        ctrlDiv.className = 'feed-controls';
+
+        // Gruppo Bottoni Sort
+        const sortGroup = document.createElement('div');
+        sortGroup.className = 'feed-sort-group';
+        
+        const btnView = document.createElement('button');
+        btnView.className = 'action-btn active';
+        btnView.innerHTML = '<i class="far fa-eye"></i> Ordina per Visualizzazioni';
+        
+        const btnInt = document.createElement('button');
+        btnInt.className = 'action-btn';
+        btnInt.innerHTML = '<i class="far fa-thumbs-up"></i> Ordina per Interazioni';
+
+        sortGroup.appendChild(btnView);
+        sortGroup.appendChild(btnInt);
+
+        // Bottone Export con Logica UpperCase per Label
+        const btnExp = document.createElement('button');
+        btnExp.className = 'action-btn excel';
+        btnExp.innerHTML = '<i class="fas fa-file-excel"></i> Scarica Excel';
+        btnExp.onclick = () => {
+            // Mapping dei dati per l'export: Label UPPER, Argomento Originale
+            const exportData = posts.map(r => {
+                const newRow = {...r}; // Clona riga
+                if(cols.label) newRow[cols.label] = String(newRow[cols.label] || '').toUpperCase();
+                // cols.arg rimane originale
+                return newRow;
+            });
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, channelName || "Post");
+            XLSX.writeFile(wb, `Post_${channelName}.xlsx`);
+        };
+
+        ctrlDiv.appendChild(sortGroup);
+        ctrlDiv.appendChild(btnExp);
+        container.appendChild(ctrlDiv);
+
+        // Contenitore Griglia
+        const gridDiv = document.createElement('div'); gridDiv.className = 'post-grid';
+        container.appendChild(gridDiv);
+
+        let limit = 6;
+        let currentSort = 'views'; // 'views' or 'inter'
+
+        const render = () => {
+            gridDiv.innerHTML = '';
+            // Sorting Logic
+            let sorted = [...posts];
+            if (currentSort === 'views') {
+                sorted.sort((a,b) => (Number(b[cols.vis])||0) - (Number(a[cols.vis])||0));
+            } else {
+                sorted.sort((a,b) => (Number(b[cols.inter])||0) - (Number(a[cols.inter])||0));
+            }
+
+            sorted.slice(0, limit).forEach(r => {
+                // MODIFICA RICHIESTA: Label in UPPERCASE, Argomento Originale
+                const label = (r[cols.label] || 'Account').toUpperCase();
+                const arg = r[cols.arg] || 'Generale';
+                
+                const date = formatDate(r[cols.data]);
+                const copyText = r[cols.copy] || '';
+                const visF = formatNumber(r[cols.vis]);
+                const intF = formatNumber(r[cols.inter]);
+                const link = r[cols.link] || '#';
+                const card = document.createElement('div'); card.className = 'post-card';
+                card.innerHTML = `
+                    <div class="post-header"><div class="post-channel-icon">${getChannelIcon(channelName)}</div><div class="post-meta"><div class="post-label">${label}</div><div class="post-date">${date}</div></div></div>
+                    <div class="post-body"><span class="post-topic">${arg}</span><div class="post-text-wrapper"><div class="post-text">${copyText}</div></div></div>
+                    <div class="post-footer"><div class="post-metrics"><div class="metric-item views"><i class="far fa-eye"></i> ${visF}</div><div class="metric-item likes"><i class="far fa-thumbs-up"></i> ${intF}</div></div><a href="${link}" target="_blank" class="post-link-btn"><i class="fas fa-external-link-alt"></i></a></div>`;
+                card.querySelector('.post-label').appendChild(createCopyBtn(label));
+                card.querySelector('.post-date').appendChild(createCopyBtn(date));
+                card.querySelector('.post-topic').appendChild(createCopyBtn(arg));
+                const copyBody = createCopyBtn(copyText); copyBody.style.float='right';
+                card.querySelector('.post-text').prepend(copyBody);
+                gridDiv.appendChild(card);
+            });
+            
+            // Show More Button
+            if (sorted.length > limit) {
+                const oldBtns = container.querySelectorAll('.feed-more-btns');
+                oldBtns.forEach(b => b.remove());
+
+                const ctrls = document.createElement('div'); 
+                ctrls.className = 'feed-more-btns';
+                ctrls.style.marginTop='20px'; ctrls.style.textAlign='center';
+                const b = document.createElement('button'); b.className='save-table'; b.style.background='#fff'; b.style.border='1px solid #ccc';
+                b.textContent = `Mostra tutti (${sorted.length})`;
+                b.onclick = () => { limit = sorted.length; render(); };
+                ctrls.appendChild(b); container.appendChild(ctrls);
+            } else {
+                 const oldBtns = container.querySelectorAll('.feed-more-btns');
+                 oldBtns.forEach(b => b.remove());
+            }
+        };
+
+        // Event Listeners Sorting
+        btnView.onclick = () => {
+            currentSort = 'views';
+            btnView.classList.add('active');
+            btnInt.classList.remove('active');
+            limit = 6;
+            render();
+        };
+
+        btnInt.onclick = () => {
+            currentSort = 'inter';
+            btnInt.classList.add('active');
+            btnView.classList.remove('active');
+            limit = 6;
+            render();
+        };
+
+        render();
     }
   </script>
 </body>
