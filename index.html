@@ -836,7 +836,7 @@
         return dates;
     }
 
-    // FUNZIONE DISEGNO GRAFICO D3 COMPLETA (RIPRISTINATA e MODIFICATA PER 1200x453)
+    // FUNZIONE DISEGNO GRAFICO D3 COMPLETA (RIPRISTINATA e MODIFICATA PER 1200x453 con TITOLI BILANCIATI)
     function drawChart(containerId, data, metric, title, total, allDaysInMonth) {
         const container = d3.select("#" + containerId);
         container.html("");
@@ -848,9 +848,8 @@
             .html('<i class="material-icons" style="font-size: 20px;">download</i>');
         downloadBtn.append('span').attr('class', 'tooltip-chart').text('Scarica SVG');
 
-        const margin = {top: 60, right: 20, bottom: 50, left: 50};
-        
-        // --- MODIFICA RICHIESTA: DIMENSIONI FISSE ---
+        // --- MODIFICA MARGINI E DIMENSIONI ---
+        const margin = {top: 75, right: 20, bottom: 50, left: 55}; // Margine superiore ridotto da 90 a 75
         const svgWidth = 1200;
         const svgHeight = 453;
         const width = svgWidth - margin.left - margin.right;
@@ -858,7 +857,7 @@
         // ---------------------------------------------
         
         const svg = container.append("svg")
-            .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`) // Coordinate interne fisse
+            .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`) 
             .attr("preserveAspectRatio", "xMidYMid meet")
             .style("background-color", "transparent")
             .append("g")
@@ -884,16 +883,26 @@
         yAxisG.selectAll(".tick line").attr("stroke", "none");
 
         const header = svg.append("g").attr("class", "chart-header").attr("transform", `translate(${-40}, 0)`);
-        const titleText = header.append("text").attr("x", 0).attr("y", -30);
+        const titleText = header.append("text").attr("x", 0).attr("y", -30); 
         titleText.append("tspan").attr("class", "title-main").text(title);
-        titleText.append("tspan").attr("class", "title-total").attr("dx", "15").text(`Totale: ${formatKValue(total)}`);
-        header.append("line").attr("class", "header-line").attr("x1", 0).attr("x2", width / 2).attr("y1", -18).attr("y2", -18).attr("stroke-width", 1);
+        titleText.append("tspan").attr("class", "title-total").attr("dx", "20").text(`Totale: ${formatKValue(total)}`);
+        // RIGA RIPRISTINATA A 1px
+        header.append("line").attr("class", "header-line").attr("x1", 0).attr("x2", width / 2).attr("y1", -15).attr("y2", -15).attr("stroke-width", 1); 
 
         svg.selectAll(".bar").data(allDaysInMonth).enter().append("rect").attr("class", "bar")
            .attr("x", d => x(d)).attr("y", d => y(d3.sum(groupedData.get(d) || [], v => +v[metric])))
            .attr("width", x.bandwidth()).attr("height", d => height - y(d3.sum(groupedData.get(d) || [], v => +v[metric])));
 
-        const styles = { tm: { fill: '#0431AE', s: '22px', w: '800'}, tt: { fill: '#3a3a3a', s: '22px', w: '300'}, bar: { fill: '#bfd7fd'}, at: { fill: '#7b7b7a', s: '13px'}, hl: { stroke: '#0431AE'} };
+        // --- STILI MODIFICATI PER HEADER ---
+        const styles = { 
+            tm: { fill: '#0431AE', s: '32px', w: '800'}, // Ridotto a 32px
+            tt: { fill: '#3a3a3a', s: '32px', w: '300'}, // Ridotto a 32px
+            bar: { fill: '#bfd7fd'}, 
+            at: { fill: '#7b7b7a', s: '16px'}, // Mantenuto 16px (1/5 larger)
+            hl: { stroke: '#0431AE'} 
+        };
+        // -----------------------------------
+        
         svg.select('.title-main').style('font-size', styles.tm.s).style('font-weight', styles.tm.w).style('fill', styles.tm.fill);
         svg.select('.title-total').style('font-size', styles.tt.s).style('font-weight', styles.tt.w).style('fill', styles.tt.fill);
         svg.selectAll('.bar').style('fill', styles.bar.fill);
@@ -903,7 +912,6 @@
         const getBlob = () => {
              const cloned = svg.node().closest('svg').cloneNode(true);
              const s = d3.select(cloned); s.style('background', 'white');
-             // Per il download SVG, non servono dimensioni fisse bitmap, ma il viewBox garantisce l'aspect ratio
              return new Blob([new XMLSerializer().serializeToString(cloned)], {type:"image/svg+xml;charset=utf-8"});
         };
         downloadBtn.on('click', () => {
@@ -914,7 +922,6 @@
         copyBtn.on('click', () => {
             const img = new Image();
             img.onload = () => {
-                // Per la copia, usiamo le dimensioni tassative 1200x453
                 const c = document.createElement("canvas"); 
                 c.width = 1200; 
                 c.height = 453;
