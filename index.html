@@ -159,6 +159,9 @@
     th { background: #f8fafc; color: #4a5568; font-weight: 700; padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
     td { padding: 12px; border-bottom: 1px solid #edf2f7; vertical-align: middle; font-size: 0.9rem; }
     tr:hover td { background-color: #f7fafc; }
+    /* Totale tabella */
+    tfoot tr { background-color: #eff6ff; font-weight: bold; border-top: 2px solid #cbd5e0; }
+    tfoot td { color: var(--primary); }
 
     /* Accordion */
     details.accordion-item {
@@ -302,6 +305,13 @@
     .split-left { flex: 1; overflow-y: auto; padding-right: 10px; }
     .split-right { flex: 2; background: #eef2f5; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid #dee2e6; overflow: hidden; padding: 10px; }
     .split-right svg { max-width: 100%; height: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: white; }
+
+    /* --- NUOVO CSS PER ANALISI LABEL --- */
+    .tables-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 30px; }
+    .table-col { flex: 1; min-width: 400px; background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--shadow); }
+    .label-chart-wrapper { margin-top: 30px; background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: var(--shadow); position: relative; }
+    .label-chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    .label-chart-title { font-size: 1.2rem; color: var(--primary); font-weight: 700; font-family: 'Avenir Next LT Pro', sans-serif; }
 
   </style>
 </head>
@@ -464,9 +474,6 @@
         }
         
         // --- FIX CRITICO PER FIREFOX E BLOCCHI CORS ---
-        // NON iniettiamo @font-face con URL esterni nel blob del canvas.
-        // Firefox considera il canvas "Tainted" (contaminato) e blocca l'export.
-        // Usiamo invece font di sistema per la generazione dell'immagine da copiare.
         const safeFontStyle = `<style>
             text, tspan { font-family: "Segoe UI", "Arial", sans-serif !important; }
         </style>`;
@@ -610,6 +617,31 @@
         if (num >= 1000000) return (num / 1000000).toFixed(1).replace('.', ',') + 'M';
         else if (num >= 1000) return (num / 1000).toFixed(1).replace('.', ',') + 'K';
         return num.toString().replace('.', ',');
+    }
+    
+    // NUOVA FUNZIONE DI FORMATTAZIONE SMART RICHIESTA (K/M con decimali puliti)
+    function formatSmartKM(num) {
+        num = Number(num) || 0;
+        if (num < 1000) return formatNumberItalian(num);
+        
+        let val, suffix;
+        if (num >= 1000000) {
+            val = num / 1000000;
+            suffix = 'M';
+        } else {
+            val = num / 1000;
+            suffix = 'K';
+        }
+        
+        // 2 cifre decimali, sostituisci punto con virgola
+        let str = val.toFixed(2).replace('.', ',');
+        
+        // Rimuovi decimali inutili:
+        // ,00 -> stringa vuota
+        // ,50 -> ,5
+        str = str.replace(/,00$/, '').replace(/,(\d)0$/, ',$1');
+        
+        return str + suffix;
     }
 
     function createCopyBtn(textToCopy) {
@@ -790,21 +822,117 @@
         return svg;
     }
 
-    // --- 3. LABELS ---
+    // --- 3. LABELS (MODIFICATA PER WRAPPING TESTO LUNGO) ---
     function renderLabels(data) {
-        const container = document.getElementById('tab-labels'); container.innerHTML = '';
-        const aggV={}, aggI={};
-        data.forEach(r=>{ const l=r[cols.label]||'Nessuna'; aggV[l]=(aggV[l]||0)+Number(r[cols.vis]||0); aggI[l]=(aggI[l]||0)+Number(r[cols.inter]||0); });
-        
-        const cardV = document.createElement('div'); cardV.className='card';
-        cardV.innerHTML = '<h2><i class="far fa-eye"></i> Analisi Visualizzazioni</h2><div class="table-wrapper"><table><thead><tr><th>Label</th><th>Vis</th></tr></thead><tbody></tbody></table></div>';
-        Object.entries(aggV).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{ cardV.querySelector('tbody').innerHTML+=`<tr><td>${k}</td><td>${formatNumberItalian(v)}</td></tr>`; });
-        container.appendChild(cardV);
+        const container = document.getElementById('tab-labels'); 
+        container.innerHTML = '';
 
-        const cardI = document.createElement('div'); cardI.className='card';
-        cardI.innerHTML = '<h2><i class="far fa-thumbs-up"></i> Analisi Interazioni</h2><div class="table-wrapper"><table><thead><tr><th>Label</th><th>Interazioni</th></tr></thead><tbody></tbody></table></div>';
-        Object.entries(aggI).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{ cardI.querySelector('tbody').innerHTML+=`<tr><td>${k}</td><td>${formatNumberItalian(v)}</td></tr>`; });
-        container.appendChild(cardI);
+        // 1. Aggregazione Dati e Totali
+        const aggV = {}, aggI = {};
+        let totalVis = 0;
+        let totalInter = 0;
+
+        data.forEach(r => { 
+            const l = r[cols.label] || 'Nessuna'; 
+            const v = Number(r[cols.vis] || 0);
+            const i = Number(r[cols.inter] || 0);
+            
+            aggV[l] = (aggV[l] || 0) + v; 
+            aggI[l] = (aggI[l] || 0) + i;
+            
+            totalVis += v;
+            totalInter += i;
+        });
+
+        // Ordinamento (Top per tabelle e grafici)
+        const sortedV = Object.entries(aggV).map(([k, v]) => ({ label: k, val: v })).sort((a, b) => b.val - a.val);
+        const sortedI = Object.entries(aggI).map(([k, v]) => ({ label: k, val: v })).sort((a, b) => b.val - a.val);
+
+        // 2. Creazione Layout Tabelle Affiancate
+        const tablesRow = document.createElement('div');
+        tablesRow.className = 'tables-row';
+
+        // Helper per creare colonna tabella con Totale
+        const createTableCol = (title, dataList, icon, totalVal) => {
+            const col = document.createElement('div');
+            col.className = 'table-col';
+            
+            const header = document.createElement('div');
+            header.className = 'table-header-actions';
+            header.innerHTML = `<h3>${icon} ${title}</h3>`;
+            
+            const tbl = document.createElement('table');
+            header.appendChild(createTableCopyBtn(tbl));
+            
+            col.appendChild(header);
+
+            tbl.innerHTML = `<thead><tr><th>Label</th><th>Valore</th></tr></thead><tbody></tbody>`;
+            
+            // Corpo Tabella - NUMERI COMPLETI (NON SEMPLIFICATI)
+            dataList.forEach(item => {
+                tbl.querySelector('tbody').innerHTML += `<tr><td>${item.label}</td><td>${formatNumberItalian(item.val)}</td></tr>`;
+            });
+
+            // Piede Tabella (Totale) - NUMERO SEMPLIFICATO (K/M)
+            const tfoot = document.createElement('tfoot');
+            const formattedTotal = formatSmartKM(totalVal);
+            const trTotal = document.createElement('tr');
+            trTotal.innerHTML = `<td>TOTALE</td><td><div style="display:flex; justify-content:space-between; align-items:center;"><span>${formattedTotal}</span></div></td>`;
+            // Aggiungo bottone copia per il totale
+            trTotal.querySelector('div').appendChild(createCopyBtn(formattedTotal));
+            
+            tfoot.appendChild(trTotal);
+            tbl.appendChild(tfoot);
+            
+            const tw = document.createElement('div');
+            tw.className = 'table-wrapper';
+            tw.style.maxHeight = '400px'; 
+            tw.appendChild(tbl);
+            col.appendChild(tw);
+            return col;
+        };
+
+        tablesRow.appendChild(createTableCol('Visualizzazioni', sortedV, '<i class="far fa-eye"></i>', totalVis));
+        tablesRow.appendChild(createTableCol('Interazioni', sortedI, '<i class="far fa-thumbs-up"></i>', totalInter));
+        container.appendChild(tablesRow);
+
+        // 3. Creazione Grafici SVG (Sotto le tabelle)
+        // Grafico Visualizzazioni
+        const chartVWrapper = document.createElement('div'); chartVWrapper.className = 'label-chart-wrapper';
+        chartVWrapper.innerHTML = `<div class="label-chart-header"><span class="label-chart-title">Top Label per Visualizzazioni</span><div class="card-actions" id="actions-chart-v"></div></div><div id="svg-container-v"></div>`;
+        container.appendChild(chartVWrapper);
+
+        // Grafico Interazioni
+        const chartIWrapper = document.createElement('div'); chartIWrapper.className = 'label-chart-wrapper';
+        chartIWrapper.innerHTML = `<div class="label-chart-header"><span class="label-chart-title">Top Label per Interazioni</span><div class="card-actions" id="actions-chart-i"></div></div><div id="svg-container-i"></div>`;
+        container.appendChild(chartIWrapper);
+
+        // Generazione SVG (Top 10 per leggibilità su grande formato)
+        const svgV = renderLabelSvg(sortedV.slice(0, 10), 'Visualizzazioni');
+        document.getElementById('svg-container-v').appendChild(svgV);
+        
+        const svgI = renderLabelSvg(sortedI.slice(0, 10), 'Interazioni');
+        document.getElementById('svg-container-i').appendChild(svgI);
+
+        // Setup Bottoni Export
+        const setupExport = (svgEl, divId, filename) => {
+            const div = document.getElementById(divId);
+            
+            // Tasto Copia
+            const btnCopy = document.createElement('button'); btnCopy.className = 'action-btn'; 
+            btnCopy.innerHTML = '<i class="far fa-copy"></i> Copia HQ';
+            btnCopy.onclick = () => copySvgHighRes(svgEl); 
+            
+            // Tasto Download Trasparente
+            const btnDown = document.createElement('button'); btnDown.className = 'action-btn yellow'; 
+            btnDown.innerHTML = '<i class="fas fa-download"></i> SVG Trasparente';
+            btnDown.onclick = () => downloadTransparentSvg(svgEl, filename);
+
+            div.append(btnCopy, btnDown);
+        };
+
+        setupExport(svgV, 'actions-chart-v', 'Grafico_Label_Visualizzazioni.svg');
+        setupExport(svgI, 'actions-chart-i', 'Grafico_Label_Interazioni.svg');
     }
 
     // --- 4. TOPICS ---
@@ -1092,6 +1220,136 @@
         const svgEl = document.querySelector('#pg-preview-container svg'); if(!svgEl) return;
         // MODIFICATO PER USARE copySvgHighRes invece di png normale
         copySvgHighRes(svgEl);
+    }
+
+    // --- GENERATORE SVG CUSTOM PER LABEL (MODIFICATO CON WRAPPING TESTO LUNGO) ---
+    function renderLabelSvg(data, metricName) {
+        const svgns = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgns, 'svg');
+        
+        // 1. Risoluzione fissa 2800x2000
+        const w = 2800;
+        const h = 2000;
+        
+        // 2. Intestazione RIMOSSA
+        const headerH = 20; // Solo un piccolo padding superiore
+        const footerH = 50;
+        const availableH = h - headerH - footerH;
+        
+        // Calcolo altezza riga dinamica
+        const rowH = availableH / (data.length || 1);
+        
+        svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+        svg.setAttribute('xmlns', svgns);
+        svg.style.fontFamily = "'Avenir Next LT Pro', 'Segoe UI', sans-serif";
+        
+        // SFONDO TRASPARENTE (Nessun rect di background)
+
+        // Calcolo Scala
+        const maxVal = data.length > 0 ? data[0].val : 1;
+        const maxBarW = w * 0.50; 
+        const startBarX = w * 0.35; 
+
+        data.forEach((item, i) => {
+            const y = headerH + (i * rowH);
+            const barW = (item.val / maxVal) * maxBarW;
+            const barHeight = rowH * 0.6; // Altezza barra relativa allo spazio riga
+
+            // 4. Label Text - LOGICA PER WRAPPING TESTO LUNGO
+            const labelText = document.createElementNS(svgns, 'text');
+            labelText.setAttribute('x', 20);
+            // Non impostiamo y qui se usiamo tspan, ma lo usiamo per il singolo
+            labelText.setAttribute('font-size', 90); 
+            labelText.setAttribute('fill', '#333');
+
+            // Logica di split se > 25 char
+            if(item.label.length > 25) {
+                 const words = item.label.split(' ');
+                 let line1 = '', line2 = '';
+                 // Semplice ripartizione
+                 for(let wd of words) {
+                    if((line1 + wd).length < 25) line1 += wd + ' ';
+                    else line2 += wd + ' ';
+                 }
+                 // Se la prima parola è lunghissima (fallback)
+                 if(!line1 && words.length > 0) { line1 = words[0]; line2 = words.slice(1).join(' '); }
+
+                 // Riga 1 (Spostata verso l'alto rispetto al centro)
+                 const ts1 = document.createElementNS(svgns, 'tspan');
+                 ts1.textContent = line1.trim();
+                 ts1.setAttribute('x', 20);
+                 ts1.setAttribute('y', y + (rowH/2) - 10); 
+
+                 // Riga 2 (Spostata verso il basso)
+                 const ts2 = document.createElementNS(svgns, 'tspan');
+                 ts2.textContent = line2.trim();
+                 ts2.setAttribute('x', 20);
+                 ts2.setAttribute('dy', 90); // Interlinea stretta per font 90
+
+                 labelText.appendChild(ts1);
+                 labelText.appendChild(ts2);
+            } else {
+                 // Testo breve: centrato normalmente
+                 labelText.textContent = item.label;
+                 labelText.setAttribute('y', y + (rowH/2) + 25); 
+            }
+            svg.appendChild(labelText);
+            
+            // 3. The Bar - SPESSORE BORDO AUMENTATO
+            const rect = document.createElementNS(svgns, 'rect');
+            rect.setAttribute('x', startBarX);
+            rect.setAttribute('y', y + (rowH/2) - (barHeight/2));
+            rect.setAttribute('width', Math.max(barW, 5)); 
+            rect.setAttribute('height', barHeight);
+            rect.setAttribute('fill', '#eedc00'); // Giallo Poste
+            rect.setAttribute('stroke', '#0431ae'); // Bordo Blu
+            rect.setAttribute('stroke-width', 5); // Aumentato spessore
+            rect.setAttribute('rx', 15);
+            svg.appendChild(rect);
+
+            // 5. Value Text - POSIZIONATO A LATO DELLA BARRA + FONT SPESSO
+            const valText = document.createElementNS(svgns, 'text');
+            // Posizione X: Fine barra + piccolo margine (es. 30px)
+            valText.setAttribute('x', startBarX + Math.max(barW, 5) + 30);
+            valText.setAttribute('y', y + (rowH/2) + 25);
+            valText.setAttribute('text-anchor', 'start'); 
+            valText.setAttribute('font-size', 70);
+            valText.setAttribute('fill', '#0431ae'); // Blu
+            valText.setAttribute('font-weight', 'bold'); // Più spesso
+            valText.textContent = formatSmartKM(item.val); // Smart Format
+            svg.appendChild(valText);
+            
+            // Separator line
+            if (i < data.length - 1) {
+                const sep = document.createElementNS(svgns, 'line');
+                sep.setAttribute('x1', 0); sep.setAttribute('y1', y + rowH);
+                sep.setAttribute('x2', w); sep.setAttribute('y2', y + rowH);
+                sep.setAttribute('stroke', '#eee');
+                sep.setAttribute('stroke-width', 2);
+                svg.appendChild(sep);
+            }
+        });
+
+        return svg;
+    }
+
+    // Helper specifico per download trasparente
+    function downloadTransparentSvg(svgElement, filename) {
+        if (!svgElement) return;
+        const serializer = new XMLSerializer();
+        let source = serializer.serializeToString(svgElement);
+        
+        if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+            source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        
+        source = source.replace('>', '><style>@font-face { font-family: "Avenir Next LT Pro"; src: url("https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2") format("woff2"); } text { font-family: "Avenir Next LT Pro", sans-serif; }</style>');
+
+        const blob = new Blob([source], {type: 'image/svg+xml;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
   </script>
 </body>
