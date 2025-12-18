@@ -14,6 +14,13 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
 
   <style>
+    /* --- FONT ORIGINALE GRAFICI ISTITUZIONALI --- */
+    @font-face {
+        font-family: 'Avenir Next LT Pro';
+        src: url('https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2') format('woff2');
+        font-weight: normal;
+    }
+
     :root {
       /* Colori App 1 (Base) */
       --primary: #00529F;
@@ -31,6 +38,11 @@
       --chart-text-grey: #7b7b7a;
       --chart-title-blue: #0431AE;
       --chart-bar-blue: #bfd7fd;
+
+      /* Variabili Grafici Istituzionali */
+      --inst-blue: #1b47b4;
+      --inst-yellow: #ffcc00;
+      --inst-border: #ddd;
     }
     
     body { 
@@ -116,6 +128,8 @@
     .action-btn:hover { border-color: var(--primary); color: var(--primary); background: #f8fafc; }
     .action-btn.excel { color: #166534; border-color: #86efac; background: #f0fdf4; }
     .action-btn.excel:hover { background: #dcfce7; }
+    .action-btn.yellow { color: #b7950b; border-color: #f1c40f; background: #fef9e7; }
+    .action-btn.yellow:hover { background: #fcf3cf; }
     .action-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); }
 
     /* Cards e Layout Gen */
@@ -189,10 +203,10 @@
     .post-header { padding: 12px 16px; background: #fdfdfd; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 12px; }
     .post-channel-icon { font-size: 24px; color: var(--primary); margin-top: 2px; }
     .post-meta { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-    .post-label { font-weight: 700; color: #2d3748; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; } /* Force CSS Uppercase visual too */
+    .post-label { font-weight: 700; color: #2d3748; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; }
     .post-date { font-size: 0.8rem; color: #718096; display: flex; align-items: center; gap: 6px; }
     .post-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
-    .post-topic { display: inline-flex; align-items: center; gap: 6px; background: #eef2f7; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; /* No text-transform here to keep original case */ }
+    .post-topic { display: inline-flex; align-items: center; gap: 6px; background: #eef2f7; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; align-self: flex-start; }
     .post-text { font-size: 0.95rem; color: #4a5568; white-space: pre-wrap; background: #fff; line-height: 1.5; position: relative; }
     .post-footer { padding: 12px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; }
     .post-metrics { display: flex; gap: 15px; }
@@ -244,9 +258,82 @@
     .feed-controls { display: flex; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px; }
     .feed-sort-group { display: flex; gap: 5px; }
 
+    /* --- STILI SPECIFICI GRAFICI ISTITUZIONALI --- */
+    .inst-chart-container-wrapper {
+        margin-top: 20px;
+        margin-bottom: 30px;
+        background-color: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: var(--border-radius);
+        padding: 15px;
+        box-shadow: var(--shadow);
+    }
+    .inst-chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    .inst-chart-title {
+        font-weight: 700;
+        color: var(--inst-blue);
+        font-size: 1.1rem;
+    }
+    .inst-chart-controls {
+        display: flex; gap: 10px;
+    }
+    .chart-container-inst {
+        border: 1px solid var(--inst-border);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        background-color: #fcfcfc;
+        display: flex; justify-content: center;
+    }
+    .chart-container-inst svg {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        background-color: white; 
+    }
+
+    /* --- STILI MODALE EDITING --- */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); z-index: 1000;
+        display: none; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-content {
+        background: #fff; padding: 25px; border-radius: 8px; width: 90%; max-width: 600px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .modal-header { font-size: 1.2rem; font-weight: 700; color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .modal-row { margin-bottom: 15px; }
+    .modal-row label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; }
+    .modal-row textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; resize: vertical; min-height: 60px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .close-modal { cursor: pointer; background: none; border: none; font-size: 1.2rem; color: #999; }
+
   </style>
 </head>
 <body>
+
+  <div class="modal-overlay" id="editModal">
+      <div class="modal-content">
+          <div class="modal-header">
+              <span>Modifica Testi Grafico (Best Performers)</span>
+              <button class="close-modal" onclick="closeEditModal()"><i class="fas fa-times"></i></button>
+          </div>
+          <div id="modal-body-inputs">
+              </div>
+          <div class="modal-footer">
+              <button class="action-btn" onclick="closeEditModal()">Annulla</button>
+              <button class="action-btn active" onclick="saveModalChanges()">Applica e Rigenera</button>
+          </div>
+      </div>
+  </div>
 
   <header>
     <h1><i class="fas fa-chart-line"></i> Dashboard Report Social Unificata</h1>
@@ -291,6 +378,7 @@
     let rawData = [];
     let filteredData = [];
     let cols = {};
+    let currentTop5Data = []; // Store for institutional top 5 to allow editing
 
     // --- UTILS ---
     function showToast(msg, type) {
@@ -310,6 +398,80 @@
         if(tabId === 'tab-labels') buttons[2].classList.add('active');
         if(tabId === 'tab-topics') buttons[3].classList.add('active');
         if(tabId === 'tab-channels') buttons[4].classList.add('active');
+    }
+
+    // --- COPY & EXPORT HELPERS (INSTITUTIONAL CHARTS) ---
+    function formatNumberInstChart(num) {
+        const numericValue = Number(num);
+        if (isNaN(numericValue)) return num;
+        if (numericValue >= 1000000) {
+            let formatted = (numericValue / 1000000).toFixed(2);
+            if (formatted.endsWith('.00')) formatted = (numericValue / 1000000).toFixed(0);
+            else if (formatted.slice(-1) === '0') formatted = (numericValue / 1000000).toFixed(1);
+            return formatted.replace('.', ',') + 'M';
+        }
+        if (numericValue >= 1000) return Math.round(numericValue / 1000).toString() + 'K';
+        return numericValue.toString();
+    }
+
+    function downloadSvgDirect(svgElement, filename) {
+        if (!svgElement) return;
+        const serializer = new XMLSerializer();
+        let source = serializer.serializeToString(svgElement);
+        if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+            source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        source = source.replace('>', '><style>@font-face { font-family: "Avenir Next LT Pro"; src: url("https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2") format("woff2"); }</style>');
+
+        const blob = new Blob([source], {type: 'image/svg+xml;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function copySvgAsImage(svgElement) {
+        if (!svgElement) return;
+        const serializer = new XMLSerializer();
+        let source = serializer.serializeToString(svgElement);
+        
+        // Fix for exact resolution: use viewBox dimensions, NOT screen dimensions
+        const viewBox = svgElement.getAttribute('viewBox').split(' ');
+        const svgW = parseInt(viewBox[2]);
+        const svgH = parseInt(viewBox[3]);
+        
+        const fontStyle = `<style>@font-face { font-family: 'Avenir Next LT Pro'; src: url('https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2') format('woff2'); }</style>`;
+        source = source.replace('>', '>' + fontStyle);
+
+        const img = new Image();
+        const svgBlob = new Blob([source], {type: 'image/svg+xml;charset=utf-8'});
+        const url = URL.createObjectURL(svgBlob);
+        
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            // Explicitly set canvas to SVG native resolution
+            canvas.width = svgW;
+            canvas.height = svgH;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, svgW, svgH); // Draw image at exact size
+            
+            canvas.toBlob(function(blob) {
+                try {
+                    navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+                    showToast('Grafico copiato negli appunti (Alta Risoluzione)!', 'success');
+                } catch (err) {
+                    showToast('Errore copia. Usa "Scarica SVG"', 'error');
+                }
+                URL.revokeObjectURL(url);
+            });
+        };
+        img.src = url;
     }
 
     // --- COPY TABLE FUNCTION ---
@@ -438,8 +600,6 @@
             showToast("Nessun dato caricato!", "error");
             return;
         }
-
-        // 1. Calcolo Volumi (Ambito 2)
         const counts = { fb:0, ig:0, wa:0, tw:0, li:0, yt:0 };
         filteredData.forEach(r => {
             const c = String(r[cols.canale]).toLowerCase();
@@ -450,8 +610,6 @@
             else if(c.includes('youtube')) counts.yt++; 
             else if(c.includes('whatsapp')) counts.wa++;
         });
-
-        // 2. Calcolo Best Performers (Ambito 3)
         const topics = {};
         filteredData.forEach(r => {
             const a = r[cols.arg] || 'Altro'; 
@@ -461,17 +619,14 @@
         const sortedTopics = Object.values(topics).sort((a,b) => b.v - a.v).slice(0, 3);
         while(sortedTopics.length < 3) sortedTopics.push({ arg: "N/D", v: 0 });
 
-        // 3. Calcolo Istituzionale
         const colIst = findCol('istituzionale', rawData[0]) || 'Istituzionale';
         const instData = filteredData.filter(r => String(r[colIst]).trim() === '1');
-        
         const instStats = {
             n: instData.length,
             v: instData.reduce((s,r) => s + (Number(r[cols.vis])||0), 0),
             i: instData.reduce((s,r) => s + (Number(r[cols.inter])||0) + (Number(r[cols.like])||0), 0)
         };
 
-        // 4. Costruzione JSON
         const customJson = {
             "__COMMENTO_SEZIONE_VOLUMI__": "--- AMBITO 2: Volumi Post ---",
             "Numero post Facebook": formatNumberForJson(counts.fb),
@@ -480,7 +635,6 @@
             "Numero post X (Twitter)": formatNumberForJson(counts.tw),
             "Numero post Whatsapp": formatNumberForJson(counts.wa),
             "Numero post Youtube": formatNumberForJson(counts.yt),
-
             "__COMMENTO_SEZIONE_BEST__": "--- AMBITO 3: Best Performer ---",
             "Argomenti più visualizzati 1": sortedTopics[0].arg,
             "Visualizzazione Argomenti più visualizzati 1": formatNumberForJson(sortedTopics[0].v),
@@ -488,13 +642,11 @@
             "Visualizzazione Argomenti più visualizzati 2": formatNumberForJson(sortedTopics[1].v),
             "Argomenti più visualizzati 3": sortedTopics[2].arg,
             "Visualizzazione Argomenti più visualizzati 3": formatNumberForJson(sortedTopics[2].v),
-
             "__COMMENTO_SEZIONE_ISTITUZIONALI__": "--- DATI ISTITUZIONALI ---",
             "Numero post istituzionali": formatNumberForJson(instStats.n),
             "Visualizzazione post istituzionali": formatNumberForJson(instStats.v),
             "Like + interazoni post istituzionali": formatNumberForJson(instStats.i)
         };
-
         const now = new Date();
         const filename = `Executive_Report_${now.toISOString().slice(0,19).replace(/[-:T]/g,'_')}.json`;
         const blob = new Blob([JSON.stringify(customJson, null, 2)], { type: "application/json" });
@@ -546,10 +698,12 @@
         card.appendChild(grid); container.appendChild(card);
     }
 
-    // --- 2. ISTITUZIONALE ---
+    // --- 2. ISTITUZIONALE (UPDATED) ---
     function renderInstitutional(data) {
         const container = document.getElementById('tab-instit');
         container.innerHTML = '';
+        
+        // 1. Dati
         const colIst = findCol('istituzionale', data[0]) || 'Istituzionale';
         const institData = data.filter(r => String(r[colIst]).trim() === '1');
         const agg={};
@@ -558,7 +712,10 @@
             if(!agg[a]) agg[a]={v:0, i:0, l:0, lnk:r[cols.link]};
             agg[a].v+=Number(r[cols.vis])||0; agg[a].i+=Number(r[cols.inter])||0; agg[a].l+=Number(r[cols.like])||0;
         });
-        const top5=Object.entries(agg).map(([a,d])=>({arg:a,...d})).sort((a,b)=>b.v-a.v).slice(0,5);
+        
+        // Salva i dati nella variabile globale per l'editing
+        currentTop5Data = Object.entries(agg).map(([a,d])=>({arg:a,...d})).sort((a,b)=>b.v-a.v).slice(0,5);
+
         const kpi = {
             'N. Post': institData.length,
             'Visualizzazioni': institData.reduce((s,r)=>s+(Number(r[cols.vis])||0),0),
@@ -566,7 +723,10 @@
             'Like/Reazioni': institData.reduce((s,r)=>s+(Number(r[cols.like])||0),0),
             'Condivisioni': institData.reduce((s,r)=>s+(Number(r[cols.cond])||0),0)
         };
+
         const card = document.createElement('div'); card.className = 'card';
+        
+        // 2. Header
         const header = document.createElement('div'); header.className = 'card-header';
         header.innerHTML = '<h2><i class="fas fa-university"></i> KPI Istituzionali</h2>';
         const btnExp = document.createElement('button');
@@ -581,7 +741,7 @@
                 { Metrica: 'Condivisioni', Valore: kpi['Condivisioni'] }
             ];
             const ws1 = XLSX.utils.json_to_sheet(kpiData);
-            const bestPerfData = top5.map(item => ({
+            const bestPerfData = currentTop5Data.map(item => ({
                 "Argomento": item.arg, "Visualizzazioni": item.v, "Interazioni": item.i, "Like": item.l
             }));
             const ws2 = XLSX.utils.json_to_sheet(bestPerfData);
@@ -592,6 +752,8 @@
         };
         header.appendChild(btnExp);
         card.appendChild(header);
+
+        // 3. Stats Grid (HTML)
         const grid = document.createElement('div'); grid.className = 'stats-grid';
         Object.entries(kpi).forEach(([k,v]) => {
             const sc = document.createElement('div'); sc.className = 'stat-card';
@@ -601,16 +763,17 @@
             grid.appendChild(sc);
         });
         card.appendChild(grid);
+
+        // 4. Data Table (HTML - Moved UP)
         const tblDiv = document.createElement('div'); tblDiv.style.marginTop='2rem';
         const tblHeadDiv = document.createElement('div'); tblHeadDiv.className = 'table-header-actions';
-        // MODIFICA RICHIESTA: Rinomina Tabella Istituzionale
-        tblHeadDiv.innerHTML = '<h3><i class="fas fa-trophy"></i> Best Performers (Top 5 Visualizzazioni)</h3>';
+        tblHeadDiv.innerHTML = '<h3><i class="fas fa-table"></i> Dettaglio Best Performers (HTML)</h3>';
         const tbl = document.createElement('table');
         tblHeadDiv.appendChild(createTableCopyBtn(tbl));
         tblDiv.appendChild(tblHeadDiv);
         const tblWrap = document.createElement('div'); tblWrap.className='table-wrapper';
         tbl.innerHTML = '<thead><tr><th>Argomento</th><th>Visualizzazioni</th><th>Interazioni</th><th>Like</th><th>Link</th></tr></thead><tbody></tbody>';
-        top5.forEach(o => {
+        currentTop5Data.forEach(o => {
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${o.arg}</td><td>${formatNumber(o.v)}</td><td>${formatNumber(o.i)}</td><td>${formatNumber(o.l)}</td>`;
             tr.querySelectorAll('td:not(:last-child)').forEach(td => td.appendChild(createCopyBtn(td.textContent.replace('K','').replace('M',''))));
@@ -619,8 +782,290 @@
             tr.appendChild(tdL);
             tbl.querySelector('tbody').appendChild(tr);
         });
-        tblWrap.appendChild(tbl); tblDiv.appendChild(tblWrap); card.appendChild(tblDiv); container.appendChild(card);
+        tblWrap.appendChild(tbl); tblDiv.appendChild(tblWrap); card.appendChild(tblDiv);
+
+        // --- BUTTON EDIT TEXT ---
+        const editBtnDiv = document.createElement('div');
+        editBtnDiv.style.marginTop = '2rem';
+        editBtnDiv.style.textAlign = 'right';
+        editBtnDiv.innerHTML = `<button class="action-btn" onclick="openEditModal()"><i class="fas fa-pen"></i> Modifica Testi per Grafici</button>`;
+        card.appendChild(editBtnDiv);
+
+        // --- CHART WRAPPER DIV ---
+        const chartsWrapper = document.createElement('div');
+        chartsWrapper.id = "charts-area-wrapper";
+
+        // Chart 1
+        const chartWrapper1 = document.createElement('div');
+        chartWrapper1.className = 'inst-chart-container-wrapper';
+        chartWrapper1.innerHTML = `
+            <div class="inst-chart-header">
+                <span class="inst-chart-title">Grafico Prestazioni Complessive</span>
+                <div class="inst-chart-controls" id="ctrl-chart-1"></div>
+            </div>
+            <div id="inst-chart-1" class="chart-container-inst"></div>
+        `;
+        chartsWrapper.appendChild(chartWrapper1);
+
+        // Chart 2
+        const chartWrapper2 = document.createElement('div');
+        chartWrapper2.className = 'inst-chart-container-wrapper';
+        chartWrapper2.innerHTML = `
+            <div class="inst-chart-header">
+                <span class="inst-chart-title">Grafico Best Performers</span>
+                <div class="inst-chart-controls" id="ctrl-chart-2"></div>
+            </div>
+            <div id="inst-chart-2" class="chart-container-inst"></div>
+        `;
+        chartsWrapper.appendChild(chartWrapper2);
+
+        card.appendChild(chartsWrapper);
+        container.appendChild(card);
+
+        // Render Initial Charts
+        renderChartsOnly(kpi, currentTop5Data);
     }
+
+    function renderChartsOnly(kpi, top5Data) {
+        // --- CHART 1 ---
+        const chart1Headers = ["Numero di post", "Visualizzazioni", "Interazioni", "Like e reazioni", "Condivisioni"];
+        const chart1Values = [kpi['N. Post'], kpi['Visualizzazioni'], kpi['Interazioni'], kpi['Like/Reazioni'], kpi['Condivisioni']];
+        const container1 = document.getElementById('inst-chart-1');
+        if(container1) {
+            container1.innerHTML = '';
+            const svg1 = renderInstSvgTop(chart1Headers, chart1Values);
+            container1.appendChild(svg1);
+            const ctrl1 = document.getElementById('ctrl-chart-1');
+            ctrl1.innerHTML = '';
+            const btnCopy1 = document.createElement('button'); btnCopy1.className='action-btn'; btnCopy1.innerHTML='<i class="far fa-copy"></i> Copia Immagine';
+            btnCopy1.onclick = () => copySvgAsImage(svg1);
+            const btnDl1 = document.createElement('button'); btnDl1.className='action-btn yellow'; btnDl1.innerHTML='<i class="fas fa-download"></i> Scarica SVG';
+            btnDl1.onclick = () => downloadSvgDirect(svg1, 'grafico-prestazioni.svg');
+            ctrl1.append(btnCopy1, btnDl1);
+        }
+
+        // --- CHART 2 ---
+        const chart2Headers = ["Argomento", "Visualizzazioni", "Interazioni", "Like", "Link"];
+        const chart2Rows = top5Data.map(item => [item.arg, item.v, item.i, item.l, item.lnk || '']);
+        const container2 = document.getElementById('inst-chart-2');
+        if(container2) {
+            container2.innerHTML = '';
+            const svg2 = renderInstSvgBottom(chart2Headers, chart2Rows);
+            container2.appendChild(svg2);
+            const ctrl2 = document.getElementById('ctrl-chart-2');
+            ctrl2.innerHTML = '';
+            const btnCopy2 = document.createElement('button'); btnCopy2.className='action-btn'; btnCopy2.innerHTML='<i class="far fa-copy"></i> Copia Immagine';
+            btnCopy2.onclick = () => copySvgAsImage(svg2);
+            const btnDl2 = document.createElement('button'); btnDl2.className='action-btn yellow'; btnDl2.innerHTML='<i class="fas fa-download"></i> Scarica SVG';
+            btnDl2.onclick = () => downloadSvgDirect(svg2, 'grafico-best-performers.svg');
+            ctrl2.append(btnCopy2, btnDl2);
+        }
+    }
+
+    // --- MODAL LOGIC ---
+    function openEditModal() {
+        const modal = document.getElementById('editModal');
+        const container = document.getElementById('modal-body-inputs');
+        container.innerHTML = '';
+        currentTop5Data.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'modal-row';
+            div.innerHTML = `
+                <label>Argomento ${index + 1}</label>
+                <textarea id="edit-input-${index}" rows="2">${item.arg}</textarea>
+            `;
+            container.appendChild(div);
+        });
+        modal.classList.add('open');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.remove('open');
+    }
+
+    function saveModalChanges() {
+        // Update local data
+        currentTop5Data.forEach((item, index) => {
+            const val = document.getElementById(`edit-input-${index}`).value;
+            item.arg = val;
+        });
+        // Re-render only charts (not the whole structure)
+        // We need KPIs to re-render chart 1 properly, although KPIs don't change text. 
+        // We can re-calculate or pass. Since renderInstitutional calculated them, let's grab them or just re-run renderInstitutional?
+        // Simpler: Just refresh the whole tab for safety, or better, separate logic.
+        // Let's re-render the whole tab to update the HTML table too (if desired, prompt says only modify for graph, but usually sync is better.
+        // Wait, prompt says "possibilità di fare un editing del testo che appare nel campo argomento... e che impattino sul grafici prodotto".
+        // It's cleaner to re-render charts. We need KPI object.
+        // Let's recalculate KPI quickly (cheap op).
+        const colIst = findCol('istituzionale', filteredData[0]) || 'Istituzionale';
+        const institData = filteredData.filter(r => String(r[colIst]).trim() === '1');
+        const kpi = {
+            'N. Post': institData.length,
+            'Visualizzazioni': institData.reduce((s,r)=>s+(Number(r[cols.vis])||0),0),
+            'Interazioni': institData.reduce((s,r)=>s+(Number(r[cols.inter])||0),0),
+            'Like/Reazioni': institData.reduce((s,r)=>s+(Number(r[cols.like])||0),0),
+            'Condivisioni': institData.reduce((s,r)=>s+(Number(r[cols.cond])||0),0)
+        };
+        
+        renderChartsOnly(kpi, currentTop5Data);
+        closeEditModal();
+        showToast("Grafici aggiornati con i nuovi testi!", "success");
+    }
+
+    // --- CHART GENERATION FUNCTIONS ---
+    
+    function renderInstSvgTop(headers, values) {
+        const svgns = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgns, 'svg');
+        const svgWidth = 2156, svgHeight = 102;
+        svg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+        svg.style.fontFamily = "'Avenir Next LT Pro', sans-serif";
+        svg.style.backgroundColor = 'white';
+        const columnWidth = svgWidth / headers.length;
+        
+        const topLineY = 45;
+        const topLine = document.createElementNS(svgns, 'line');
+        topLine.setAttribute('x1', '0'); topLine.setAttribute('y1', topLineY); topLine.setAttribute('x2', svgWidth); topLine.setAttribute('y2', topLineY);
+        topLine.setAttribute('stroke', '#1b47b4'); topLine.setAttribute('stroke-width', '2');
+        svg.appendChild(topLine);
+
+        headers.forEach((header, i) => {
+            const xPos = columnWidth * i + columnWidth / 2;
+            const headerText = document.createElementNS(svgns, 'text');
+            headerText.setAttribute('x', xPos);
+            headerText.setAttribute('y', topLineY - 10);
+            headerText.setAttribute('text-anchor', 'middle');
+            headerText.setAttribute('dominant-baseline', 'alphabetic');
+            headerText.setAttribute('font-size', '34');
+            headerText.setAttribute('fill', '#1b47b4');
+            headerText.textContent = header;
+            svg.appendChild(headerText);
+            const valueText = document.createElementNS(svgns, 'text');
+            valueText.setAttribute('x', xPos);
+            valueText.setAttribute('y', topLineY + 35);
+            valueText.setAttribute('text-anchor', 'middle');
+            valueText.setAttribute('font-size', '34');
+            valueText.setAttribute('fill', '#000000');
+            valueText.textContent = formatNumberInstChart(values[i]);
+            svg.appendChild(valueText);
+        });
+
+        const bottomLine = document.createElementNS(svgns, 'line');
+        bottomLine.setAttribute('x1', '0'); bottomLine.setAttribute('y1', '95'); bottomLine.setAttribute('x2', svgWidth); bottomLine.setAttribute('y2', '95');
+        bottomLine.setAttribute('stroke', '#cccccc'); bottomLine.setAttribute('stroke-width', '1.5');
+        svg.appendChild(bottomLine);
+        return svg;
+    }
+
+    function renderInstSvgBottom(headers, dataRows) {
+        const svgns = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgns, 'svg');
+
+        const svgWidth = 2156, totalRows = 6, rowHeight = 135, svgHeight = totalRows * rowHeight;
+        svg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+        svg.style.fontFamily = "'Avenir Next LT Pro', sans-serif";
+        svg.style.backgroundColor = 'white';
+        
+        const leftMargin = 50, rightMargin = 50;
+        const contentWidth = svgWidth - leftMargin - rightMargin;
+        const imageColWidth = 350;
+        const dataAreaWidth = contentWidth - imageColWidth;
+        const dataColWidths = [ dataAreaWidth * 0.45, dataAreaWidth * 0.1375, dataAreaWidth * 0.1375, dataAreaWidth * 0.1375, dataAreaWidth * 0.1375 ];
+
+        let currentX = leftMargin + imageColWidth;
+        headers.forEach((header, i) => {
+            const headerText = document.createElementNS(svgns, 'text');
+            const colCenter = currentX + dataColWidths[i] / 2;
+            headerText.setAttribute('x', colCenter);
+            headerText.setAttribute('y', rowHeight - 10);
+            headerText.setAttribute('font-size', '34');
+            headerText.setAttribute('fill', '#1b47b4');
+            headerText.setAttribute('text-anchor', 'middle');
+            headerText.setAttribute('dominant-baseline', 'alphabetic');
+            headerText.textContent = header;
+            svg.appendChild(headerText);
+            currentX += dataColWidths[i];
+        });
+
+        const headerLine = document.createElementNS(svgns, 'line');
+        headerLine.setAttribute('x1', leftMargin); headerLine.setAttribute('y1', rowHeight);
+        headerLine.setAttribute('x2', svgWidth - rightMargin); headerLine.setAttribute('y2', rowHeight);
+        headerLine.setAttribute('stroke', '#1b47b4'); headerLine.setAttribute('stroke-width', '2');
+        svg.appendChild(headerLine);
+
+        dataRows.slice(0, 5).forEach((row, rowIndex) => {
+            const rowCenterY = rowHeight * (rowIndex + 1) + (rowHeight / 2);
+            currentX = leftMargin + imageColWidth;
+            row.forEach((cell, i) => {
+                const cellText = document.createElementNS(svgns, 'text');
+                const colCenter = currentX + dataColWidths[i] / 2;
+                cellText.setAttribute('x', colCenter);
+                cellText.setAttribute('font-size', '34');
+                cellText.setAttribute('fill', '#000');
+                cellText.setAttribute('text-anchor', 'middle');
+                
+                const yCorrection = 10;
+
+                if (i === 0) {
+                    // ARGOMENTO: Gestione Avanzata Accapo
+                    const text = String(cell);
+                    let lines = [];
+
+                    // Supporta sia '*' che '\n' (dalla textarea)
+                    if (text.includes('\n') || text.includes('*')) {
+                        lines = text.split(/\r?\n|\*/).map(t => t.trim());
+                    } else {
+                        const maxChars = 38;
+                        if (text.length > maxChars) {
+                            let breakPoint = text.lastIndexOf(' ', maxChars);
+                            if (breakPoint === -1 || breakPoint < text.length / 3) {
+                               breakPoint = text.indexOf(' ', Math.floor(text.length / 2));
+                               if (breakPoint === -1) breakPoint = maxChars;
+                            }
+                            lines = [text.substring(0, breakPoint).trim(), text.substring(breakPoint).trim()];
+                        } else {
+                            lines = [text];
+                        }
+                    }
+                    
+                    const lineHeight = 34 * 1.2;
+                    const initialY = rowCenterY - (lines.length - 1) * lineHeight / 2;
+                    cellText.setAttribute('y', initialY + yCorrection);
+                    cellText.setAttribute('dominant-baseline', 'middle');
+
+                    lines.forEach((line, lineIndex) => {
+                        const tspan = document.createElementNS(svgns, 'tspan');
+                        tspan.textContent = line;
+                        tspan.setAttribute('x', colCenter);
+                        if (lineIndex > 0) tspan.setAttribute('dy', '1.2em');
+                        cellText.appendChild(tspan);
+                    });
+
+                } else if (i === 4) {
+                     cellText.setAttribute('y', rowCenterY + yCorrection);
+                     cellText.setAttribute('dominant-baseline', 'middle');
+                     cellText.textContent = cell ? "" : "";
+                } else {
+                    cellText.setAttribute('y', rowCenterY + yCorrection);
+                    cellText.setAttribute('dominant-baseline', 'middle');
+                    cellText.textContent = formatNumberInstChart(cell);
+                }
+                
+                svg.appendChild(cellText);
+                currentX += dataColWidths[i];
+            });
+
+            const rowLine = document.createElementNS(svgns, 'line');
+            const lineY = rowHeight * (rowIndex + 2);
+            rowLine.setAttribute('x1', leftMargin); rowLine.setAttribute('y1', lineY);
+            rowLine.setAttribute('x2', svgWidth - rightMargin); rowLine.setAttribute('y2', lineY);
+            rowLine.setAttribute('stroke', '#cccccc');
+            rowLine.setAttribute('stroke-width', '1.5');
+            svg.appendChild(rowLine);
+        });
+        return svg;
+    }
+
 
     // --- 3. ANALISI PER LABEL ---
     function renderLabels(data) {
@@ -735,7 +1180,6 @@
             d3Container.innerHTML = `<div class="chart-wrapper" id="visChartContainer"></div><div class="chart-wrapper" id="interChartContainer"></div>`;
             acc1Body.appendChild(d3Container);
             
-            // MODIFICA RICHIESTA: Tabelle in Sotto Accordion (Chiuso Default)
             const subAcc = document.createElement('details');
             subAcc.className = 'nested-accordion';
             subAcc.innerHTML = '<summary>Mostra Tabelle Dati Giornalieri</summary>';
@@ -757,7 +1201,7 @@
             acc1.appendChild(acc1Body); contentArea.appendChild(acc1);
             setTimeout(() => { renderApp2ChartsAndTables(sortedForChart, val); }, 50); 
 
-            // Accordion 2 (Feed con Ripristino Tasti e Logica CAPS)
+            // Accordion 2
             const acc2 = document.createElement('details'); acc2.className='accordion-item';
             acc2.innerHTML = `<summary><i class="fas fa-stream"></i> Feed dei Post</summary>`;
             const acc2Body = document.createElement('div'); acc2Body.className='accordion-content';
@@ -884,12 +1328,8 @@
 
     function renderChannelCards(posts, container, channelName) {
         container.innerHTML = '';
-
-        // Controlli Header
         const ctrlDiv = document.createElement('div');
         ctrlDiv.className = 'feed-controls';
-
-        // Gruppo Bottoni Sort
         const sortGroup = document.createElement('div');
         sortGroup.className = 'feed-sort-group';
         
@@ -904,16 +1344,13 @@
         sortGroup.appendChild(btnView);
         sortGroup.appendChild(btnInt);
 
-        // Bottone Export con Logica UpperCase per Label
         const btnExp = document.createElement('button');
         btnExp.className = 'action-btn excel';
         btnExp.innerHTML = '<i class="fas fa-file-excel"></i> Scarica Excel';
         btnExp.onclick = () => {
-            // Mapping dei dati per l'export: Label UPPER, Argomento Originale
             const exportData = posts.map(r => {
-                const newRow = {...r}; // Clona riga
+                const newRow = {...r}; 
                 if(cols.label) newRow[cols.label] = String(newRow[cols.label] || '').toUpperCase();
-                // cols.arg rimane originale
                 return newRow;
             });
             const ws = XLSX.utils.json_to_sheet(exportData);
@@ -926,16 +1363,14 @@
         ctrlDiv.appendChild(btnExp);
         container.appendChild(ctrlDiv);
 
-        // Contenitore Griglia
         const gridDiv = document.createElement('div'); gridDiv.className = 'post-grid';
         container.appendChild(gridDiv);
 
         let limit = 6;
-        let currentSort = 'views'; // 'views' or 'inter'
+        let currentSort = 'views'; 
 
         const render = () => {
             gridDiv.innerHTML = '';
-            // Sorting Logic
             let sorted = [...posts];
             if (currentSort === 'views') {
                 sorted.sort((a,b) => (Number(b[cols.vis])||0) - (Number(a[cols.vis])||0));
@@ -944,10 +1379,8 @@
             }
 
             sorted.slice(0, limit).forEach(r => {
-                // MODIFICA RICHIESTA: Label in UPPERCASE, Argomento Originale
                 const label = (r[cols.label] || 'Account').toUpperCase();
                 const arg = r[cols.arg] || 'Generale';
-                
                 const date = formatDate(r[cols.data]);
                 const copyText = r[cols.copy] || '';
                 const visF = formatNumber(r[cols.vis]);
@@ -966,11 +1399,9 @@
                 gridDiv.appendChild(card);
             });
             
-            // Show More Button
             if (sorted.length > limit) {
                 const oldBtns = container.querySelectorAll('.feed-more-btns');
                 oldBtns.forEach(b => b.remove());
-
                 const ctrls = document.createElement('div'); 
                 ctrls.className = 'feed-more-btns';
                 ctrls.style.marginTop='20px'; ctrls.style.textAlign='center';
@@ -984,23 +1415,8 @@
             }
         };
 
-        // Event Listeners Sorting
-        btnView.onclick = () => {
-            currentSort = 'views';
-            btnView.classList.add('active');
-            btnInt.classList.remove('active');
-            limit = 6;
-            render();
-        };
-
-        btnInt.onclick = () => {
-            currentSort = 'inter';
-            btnInt.classList.add('active');
-            btnView.classList.remove('active');
-            limit = 6;
-            render();
-        };
-
+        btnView.onclick = () => { currentSort = 'views'; btnView.classList.add('active'); btnInt.classList.remove('active'); limit = 6; render(); };
+        btnInt.onclick = () => { currentSort = 'inter'; btnInt.classList.add('active'); btnView.classList.remove('active'); limit = 6; render(); };
         render();
     }
   </script>
