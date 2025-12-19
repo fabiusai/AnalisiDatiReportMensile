@@ -353,7 +353,8 @@
     .callout-line { stroke: #0431AE; stroke-width: 1.5; }
     .callout-circle { stroke-width: 2; }
     /* RIMOSSO IL FILL DALLA CLASSE CSS PERCHE' ORA E' INLINE JS PER L'EXPORT */
-    .chart-legend text { font-family: 'Nunito Sans', sans-serif; font-size: 16px; }
+    /* MODIFICA: FONT SIZE 20px (balance requested) */
+    .chart-legend text { font-family: 'Nunito Sans', sans-serif; font-size: 20px; }
 
   </style>
 </head>
@@ -391,7 +392,7 @@
   <div class="modal-overlay" id="postGraphModal">
       <div class="modal-content post-graph-modal-content">
           <div class="modal-header">
-              <span><i class="fas fa-palette"></i> Editor top post</span>
+              <span><i class="fas fa-palette"></i> Editor top Post</span>
               <button class="close-modal" onclick="closePostGraphModal()"><i class="fas fa-times"></i></button>
           </div>
           <div class="split-modal">
@@ -1174,7 +1175,7 @@
             // Accordion 1: D3 Charts (RIPRISTINATI ORIGINALI CON LOGICA D3)
             const acc1 = document.createElement('details'); acc1.className='accordion-item'; acc1.open = true;
             
-            // HEADER con pulsante modifica Callout
+            // HEADER con pulsante modifica Callout - MODIFICA: Rinomina sezione "Editor top Post"
             const summary = document.createElement('summary');
             summary.innerHTML = `<span><i class="fas fa-chart-bar"></i> Analisi Temporale</span>
                                 <button class="action-btn" onclick="openCalloutModal(); event.preventDefault(); event.stopPropagation();" style="font-size:0.8rem; padding:4px 8px;">
@@ -1193,9 +1194,9 @@
             
             setTimeout(() => { renderApp2ChartsAndTables(sortedForChart); }, 50); 
 
-            // Accordion 2: Feed Posts
+            // Accordion 2: Feed Posts - MODIFICA: Rinomina "Editor top Post"
             const acc2 = document.createElement('details'); acc2.className='accordion-item';
-            acc2.innerHTML = `<summary><i class="fas fa-stream"></i> Feed dei Post</summary>`;
+            acc2.innerHTML = `<summary><i class="fas fa-stream"></i> Editor top Post</summary>`;
             const acc2Body = document.createElement('div'); acc2Body.className='accordion-content';
             renderChannelCards(chanData, acc2Body, val);
             acc2.appendChild(acc2Body); contentArea.appendChild(acc2);
@@ -1336,9 +1337,9 @@
 
         // --- MODIFICA MARGINI E DIMENSIONI ---
         // Aumentiamo margin bottom per la legenda
-        const margin = {top: 75, right: 20, bottom: 80, left: 55}; 
+        const margin = {top: 75, right: 20, bottom: 100, left: 55}; 
         const svgWidth = 1200;
-        const svgHeight = 500; // Increased height slightly
+        const svgHeight = 400; // MODIFICA: Altezza ridotta a 400px per renderlo più compatto
         const width = svgWidth - margin.left - margin.right;
         const height = svgHeight - margin.top - margin.bottom;
         // ---------------------------------------------
@@ -1408,8 +1409,9 @@
             annotations.forEach(ann => {
                 const g = legendGroup.append("g").attr("transform", `translate(${currentX}, 0)`);
                 
-                // Circle Icon
-                const lCircle = g.append("circle").attr("r", 12).attr("cx", 12).attr("cy", -5);
+                // Circle Icon - MODIFICA RAGGIO (9 -> Diametro 18, allineato al testo)
+                // cy = -6 per centrarlo rispetto al font 20px
+                const lCircle = g.append("circle").attr("r", 9).attr("cx", 9).attr("cy", -6);
                 if (ann.type === 0) { 
                      lCircle.attr("fill", "#F2D600").attr("stroke", "#E0E0E0");
                 } else if (ann.type === 1) { 
@@ -1421,27 +1423,47 @@
                 // Text (SUPPORTO MULTILINEA + FONT EXPLICIT)
                 // Applichiamo fill e font-family inline per garantire l'export corretto
                 const textEl = g.append("text")
-                    .attr("x", 30).attr("y", 0)
+                    .attr("x", 25).attr("y", 0) // Adjusted x for larger circle
                     .style("font-family", "'Nunito Sans', sans-serif") // FIX SPAZIATURA EXPORT
-                    .style("font-size", "16px") // CORREZIONE RICHIESTA: FONT 16px come asse X
+                    .style("font-size", "20px") // MODIFICA: FONT 20px (equilibrato)
                     .style("fill", "#0431AE"); // FIX COLORE EXPORT
                 
-                // Split by newline and append tspans
-                const lines = ann.text.split('\n');
-                lines.forEach((line, i) => {
-                    textEl.append("tspan")
-                        .attr("x", 30)
-                        .attr("dy", i === 0 ? 0 : 16) // Line height
-                        .text(line);
-                });
+                // WRAPPING AUTOMATICO
+                // Semplice logica: ogni 20 caratteri circa vai a capo per "sfruttare meglio lo spazio"
+                // O usare un limite di pixel più ampio (es. 360px per colonna)
+                const words = ann.text.split(' ');
+                let line = [];
+                let tspan = textEl.append("tspan").attr("x", 25).attr("dy", 0);
+                
+                // Se il testo contiene già \n manuali, rispettiamo quelli, altrimenti wrappiamo
+                if(ann.text.includes('\n')){
+                     const manualLines = ann.text.split('\n');
+                     textEl.text(''); // Pulisci
+                     manualLines.forEach((ml, i) => {
+                        textEl.append("tspan").attr("x", 25).attr("dy", i===0 ? 0 : 22).text(ml); // dy increased for font size
+                     });
+                } else {
+                    words.forEach((word) => {
+                        line.push(word);
+                        tspan.text(line.join(" "));
+                        // 360px max width per column (1/3 of chart)
+                        if (tspan.node().getComputedTextLength() > 360) { 
+                            line.pop();
+                            tspan.text(line.join(" "));
+                            line = [word];
+                            tspan = textEl.append("tspan").attr("x", 25).attr("dy", 22).text(word);
+                        }
+                    });
+                }
                 
                 // Calculate width for next item
+                // Use a minimum width for layout stability
                 const bbox = g.node().getBBox();
-                currentX += bbox.width + 30; // 30px gap
+                currentX += Math.max(bbox.width, 380) + 20; // Ensure columns are spaced out
             });
             
             // Center Legend
-            const totalLegendW = currentX - 30;
+            const totalLegendW = currentX - 20;
             const startX = (width - totalLegendW) / 2;
             legendGroup.attr("transform", `translate(${startX < 0 ? 0 : startX}, ${height + 60})`);
         }
@@ -1512,7 +1534,7 @@
                     <div class="post-footer">
                         <div class="post-metrics"><div class="metric-item views"><i class="far fa-eye"></i> ${visF}</div><div class="metric-item likes"><i class="far fa-thumbs-up"></i> ${intF}</div></div>
                         <div class="post-actions-right">
-                             <button class="action-btn blue-fill" onclick="openPostGraphModal(${idx})"><i class="fas fa-pen-to-square"></i> Editor top post</button>
+                             <button class="action-btn blue-fill" onclick="openPostGraphModal(${idx})"><i class="fas fa-image"></i> Crea Grafica</button>
                         </div>
                     </div>`;
                 gridDiv.appendChild(card);
