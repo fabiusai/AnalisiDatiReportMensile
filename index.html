@@ -1104,7 +1104,7 @@
         container.appendChild(card);
     }
 
-    // --- 5. CHANNELS (FULL) ---
+    // --- 5. CHANNELS (FULL - MODIFICATO PER TOGGLE ASSE SPEZZATO CON CONTROLLO MANUALE) ---
     function renderChannels(data) {
         const container = document.getElementById('tab-channels'); container.innerHTML = '';
         const counts = {}; data.forEach(r => { const c = String(r[cols.canale]).toLowerCase(); counts[c] = (counts[c]||0) + 1; });
@@ -1119,24 +1119,114 @@
         const contentArea = document.createElement('div'); contentArea.id = 'chan-content-area'; card.appendChild(contentArea);
         container.appendChild(card);
 
+        // VARIABILI DI STATO LOCALE PER IL TOGGLE E I LIMITI
+        let isCappedMode = false;
+        let capLimitVis = 0;
+        let capLimitInt = 0;
+
         sel.addEventListener('change', (e) => {
             const val = e.target.value; contentArea.innerHTML = ''; if(!val) return;
             const chanData = data.filter(r => String(r[cols.canale]).toLowerCase() === val);
             const sortedForChart = [...chanData].sort((a,b)=>{ const pa=formatDate(a[cols.data]).split('/'), pb=formatDate(b[cols.data]).split('/'); return new Date(2000+parseInt(pa[2]),pa[1]-1,pa[0]) - new Date(2000+parseInt(pb[2]),pb[1]-1,pb[0]); });
 
-            // Accordion 1: D3 Charts (RIPRISTINATI ORIGINALI CON LOGICA D3)
+            // Accordion 1: D3 Charts (RIPRISTINATI ORIGINALI CON LOGICA D3 + TOGGLE + INPUTS)
             const acc1 = document.createElement('details'); acc1.className='accordion-item'; acc1.open = true;
             acc1.innerHTML = `<summary><i class="fas fa-chart-bar"></i> Analisi Temporale</summary>`;
             const acc1Body = document.createElement('div'); acc1Body.className='accordion-content';
-            acc1Body.innerHTML = `<div class="charts-container"><div class="chart-wrapper" id="visChartContainer"></div><div class="chart-wrapper" id="interChartContainer"></div></div>`;
             
+            // --- NUOVO CONTROLLO: TOGGLE ASSE SPEZZATO + INPUTS ---
+            const toggleDiv = document.createElement('div');
+            toggleDiv.style.marginBottom = '15px';
+            toggleDiv.style.display = 'flex';
+            toggleDiv.style.alignItems = 'center';
+            toggleDiv.style.flexWrap = 'wrap';
+            toggleDiv.style.gap = '20px';
+            toggleDiv.innerHTML = `
+                <label style="cursor:pointer; font-weight:600; color:var(--primary); display:flex; align-items:center; gap:8px; font-size:0.95rem;">
+                    <input type="checkbox" id="cap-axis-toggle" style="transform:scale(1.2);">
+                    Taglia Picchi (Controllo Manuale)
+                </label>
+                
+                <div id="manual-caps-container" style="display:none; align-items:center; gap:15px; background:#f9f9f9; padding:5px 10px; border-radius:6px; border:1px solid #eee;">
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <label for="cap-input-vis" style="font-size:0.85rem; color:#555; font-weight:600;">Limite Vis:</label>
+                        <input type="number" id="cap-input-vis" style="width:100px; padding:4px; border:1px solid #ccc; border-radius:4px;">
+                    </div>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <label for="cap-input-int" style="font-size:0.85rem; color:#555; font-weight:600;">Limite Int:</label>
+                        <input type="number" id="cap-input-int" style="width:100px; padding:4px; border:1px solid #ccc; border-radius:4px;">
+                    </div>
+                </div>
+            `;
+            acc1Body.appendChild(toggleDiv);
+
+            const chartsDiv = document.createElement('div');
+            chartsDiv.innerHTML = `<div class="charts-container"><div class="chart-wrapper" id="visChartContainer"></div><div class="chart-wrapper" id="interChartContainer"></div></div>`;
+            acc1Body.appendChild(chartsDiv);
+
             const subAcc = document.createElement('details'); subAcc.className = 'nested-accordion';
             subAcc.innerHTML = '<summary>Tabelle Dati Giornalieri</summary>';
             const subContent = document.createElement('div'); subContent.className = 'nested-content panels-row';
             subContent.innerHTML = '<div class="panel-col"><div class="table-wrapper"><table id="tableVisChan"><thead><tr><th>Data</th><th>Vis</th></tr></thead><tbody></tbody></table></div></div><div class="panel-col"><div class="table-wrapper"><table id="tableInterChan"><thead><tr><th>Data</th><th>Int</th></tr></thead><tbody></tbody></table></div></div>';
             subAcc.appendChild(subContent); acc1Body.appendChild(subAcc); acc1.appendChild(acc1Body); contentArea.appendChild(acc1);
             
-            setTimeout(() => { renderApp2ChartsAndTables(sortedForChart); }, 50); 
+            // FUNZIONE DI CALCOLO SUGGERIMENTI (2° Max + 20%)
+            const calculateSuggestion = (metricKey) => {
+                // Raggruppa per data
+                const groups = {};
+                sortedForChart.forEach(d => {
+                    const fd = formatDate(d[cols.data]);
+                    if(!groups[fd]) groups[fd] = 0;
+                    groups[fd] += Number(d[metricKey] || 0);
+                });
+                const values = Object.values(groups).sort((a,b) => b - a);
+                // Se c'è almeno un valore, prendi il 2° (o il 1° se ce n'è solo uno)
+                let base = values.length > 1 ? values[1] : values[0];
+                // Se il primo è molto più grande, suggeriamo il secondo. Altrimenti il primo.
+                if (values.length > 1 && values[0] > values[1] * 1.5) {
+                    base = values[1] * 1.2;
+                } else {
+                    base = values[0]; // Non c'è bisogno di tagliare
+                }
+                return Math.round(base);
+            };
+
+            // LOGICA EVENTI
+            const toggleEl = document.getElementById('cap-axis-toggle');
+            const inputsContainer = document.getElementById('manual-caps-container');
+            const inputVis = document.getElementById('cap-input-vis');
+            const inputInt = document.getElementById('cap-input-int');
+
+            toggleEl.addEventListener('change', (evt) => {
+                isCappedMode = evt.target.checked;
+                if (isCappedMode) {
+                    // Calcola suggerimenti e riempi input
+                    capLimitVis = calculateSuggestion(cols.vis);
+                    capLimitInt = calculateSuggestion(cols.inter);
+                    inputVis.value = capLimitVis;
+                    inputInt.value = capLimitInt;
+                    inputsContainer.style.display = 'flex';
+                } else {
+                    inputsContainer.style.display = 'none';
+                }
+                renderApp2ChartsAndTables(sortedForChart, isCappedMode, capLimitVis, capLimitInt);
+            });
+
+            // Eventi Input Manuale
+            inputVis.addEventListener('input', (e) => {
+                capLimitVis = Number(e.target.value) || 0;
+                renderApp2ChartsAndTables(sortedForChart, isCappedMode, capLimitVis, capLimitInt);
+            });
+            inputInt.addEventListener('input', (e) => {
+                capLimitInt = Number(e.target.value) || 0;
+                renderApp2ChartsAndTables(sortedForChart, isCappedMode, capLimitVis, capLimitInt);
+            });
+
+            // PRIMO RENDER (DEFAULT FALSE)
+            setTimeout(() => { 
+                toggleEl.checked = false;
+                renderApp2ChartsAndTables(sortedForChart, false, 0, 0); 
+            }, 50); 
 
             // Accordion 2: Feed Posts
             const acc2 = document.createElement('details'); acc2.className='accordion-item';
@@ -1147,8 +1237,8 @@
         });
     }
     
-    // FUNZIONE DI RENDERING D3 COMPLETA (RIPRISTINATA)
-    function renderApp2ChartsAndTables(data) {
+    // FUNZIONE DI RENDERING D3 COMPLETA (MODIFICATA PER ACCETTARE LIMITI MANUALI)
+    function renderApp2ChartsAndTables(data, isCapped, limitVis, limitInt) {
         const tv = document.getElementById('tableVisChan').querySelector('tbody');
         const ti = document.getElementById('tableInterChan').querySelector('tbody');
         tv.innerHTML=''; ti.innerHTML='';
@@ -1166,8 +1256,9 @@
         const month = parseInt(parts[1]) - 1;
         const allDays = getAllDaysInMonth(year, month);
         
-        drawChart('visChartContainer', data, cols.vis, 'VISUALIZZAZIONI', visTot, allDays);
-        drawChart('interChartContainer', data, cols.inter, 'INTERAZIONI', intTot, allDays);
+        // Passiamo il limite specifico per ogni grafico
+        drawChart('visChartContainer', data, cols.vis, 'VISUALIZZAZIONI', visTot, allDays, isCapped, limitVis);
+        drawChart('interChartContainer', data, cols.inter, 'INTERAZIONI', intTot, allDays, isCapped, limitInt);
     }
     
     function getAllDaysInMonth(year, month) {
@@ -1182,8 +1273,8 @@
         return dates;
     }
 
-    // FUNZIONE DISEGNO GRAFICO D3 COMPLETA (RIPRISTINATA e MODIFICATA PER 1200x453 con TITOLI BILANCIATI)
-    function drawChart(containerId, data, metric, title, total, allDaysInMonth) {
+    // FUNZIONE DISEGNO GRAFICO D3 COMPLETA (MODIFICATA PER USARE LIMITI MANUALI)
+    function drawChart(containerId, data, metric, title, total, allDaysInMonth, isCapped, capLimit) {
         const container = d3.select("#" + containerId);
         container.html("");
         const buttons = container.append('div').attr('class', 'chart-buttons');
@@ -1194,13 +1285,12 @@
             .html('<i class="material-icons" style="font-size: 20px;">download</i>');
         downloadBtn.append('span').attr('class', 'tooltip-chart').text('Scarica SVG');
 
-        // --- MODIFICA MARGINI E DIMENSIONI ---
-        const margin = {top: 75, right: 20, bottom: 50, left: 55}; // Margine superiore ridotto da 90 a 75
+        // --- MARGINI ---
+        const margin = {top: 75, right: 20, bottom: 50, left: 55};
         const svgWidth = 1200;
         const svgHeight = 453;
         const width = svgWidth - margin.left - margin.right;
         const height = svgHeight - margin.top - margin.bottom;
-        // ---------------------------------------------
         
         const svg = container.append("svg")
             .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`) 
@@ -1216,8 +1306,19 @@
         const tickDates = allDaysInMonth.filter(d => parseInt(d.split('/')[0]) % 2 !== 0);
         const x = d3.scaleBand().domain(allDaysInMonth).range([0, width]).padding(0.3);
         const dailyTotals = allDaysInMonth.map(date => d3.sum(groupedData.get(date) || [], v => +v[metric]));
-        const yMax = d3.max(dailyTotals);
-        const y = d3.scaleLinear().domain([0, yMax > 0 ? yMax * 1.1 : 1]).range([height, 0]);
+        
+        // --- LOGICA ASSE Y (NORMALE vs CAPPED MANUALE) ---
+        let yDomainMax = d3.max(dailyTotals) || 1;
+        
+        if (isCapped && capLimit > 0) {
+            yDomainMax = capLimit; // Usiamo strettamente il valore manuale
+        }
+        
+        // --- CALCOLO SPAZIO DI TESTA (PADDING) ---
+        // Se isCapped è attivo, riserviamo 50px in cima al grafico per evitare sovrapposizioni con l'header
+        const topPadding = isCapped ? 50 : 0;
+
+        const y = d3.scaleLinear().domain([0, yDomainMax]).range([height, topPadding]);
 
         svg.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x).tickValues(tickDates).tickFormat(d => {
                     const parts = d.split('/'); const mIdx = parseInt(parts[1], 10) - 1; return `${parseInt(parts[0])}-${mesi[mIdx]}`;
@@ -1232,26 +1333,73 @@
         const titleText = header.append("text").attr("x", 0).attr("y", -30); 
         titleText.append("tspan").attr("class", "title-main").text(title);
         titleText.append("tspan").attr("class", "title-total").attr("dx", "20").text(`Totale: ${formatKValue(total)}`);
-        // RIGA RIPRISTINATA A 1px
         header.append("line").attr("class", "header-line").attr("x1", 0).attr("x2", width / 2).attr("y1", -15).attr("y2", -15).attr("stroke-width", 1); 
 
-        svg.selectAll(".bar").data(allDaysInMonth).enter().append("rect").attr("class", "bar")
-           .attr("x", d => x(d)).attr("y", d => y(d3.sum(groupedData.get(d) || [], v => +v[metric])))
-           .attr("width", x.bandwidth()).attr("height", d => height - y(d3.sum(groupedData.get(d) || [], v => +v[metric])));
+        // --- RENDER BARRE CON PUNTA SPECIALE SE TAGLIATE ---
+        svg.selectAll(".bar-group").data(allDaysInMonth).enter().append("g").each(function(d) {
+            const val = d3.sum(groupedData.get(d) || [], v => +v[metric]);
+            const isClipped = isCapped && val > yDomainMax;
+            const barHeight = height - y(isClipped ? yDomainMax : val);
+            const barY = y(isClipped ? yDomainMax : val);
+            const bw = x.bandwidth();
+            
+            const g = d3.select(this);
+            
+            if (isClipped) {
+                 // CAPPED BAR: Disegna "PUNTA A 45°" (DIAGONALE SUL LATO DESTRO)
+                 // La punta sarà sull'angolo destro. La "spalla" sinistra è più bassa.
+                 const peakH = bw; // Per avere ~45 gradi, l'altezza della pendenza è uguale alla larghezza
+                 
+                 const xPos = x(d);
+                 const yBottom = barY + barHeight;
+                 const yTip = barY; // Punta destra è il punto più alto
+                 const yShoulder = barY + peakH; // Spalla sinistra è più bassa
+                 
+                 // Path: Base -> Spalla SX -> Punta DX -> Base DX -> Chiudi
+                 const pathData = `
+                    M ${xPos} ${yBottom}
+                    L ${xPos} ${yShoulder}
+                    L ${xPos + bw} ${yTip}
+                    L ${xPos + bw} ${yBottom}
+                    Z
+                 `;
+                 
+                 g.append("path")
+                  .attr("d", pathData)
+                  .style("fill", "#bfd7fd") // Stesso colore della barra normale
+                  .style("stroke", "none"); // NESSUNA RIGA BLU
+
+                 // Label sopra la punta
+                 g.append("text")
+                  .attr("x", xPos + bw / 2)
+                  .attr("y", yTip - 5) // Spostato sopra la punta
+                  .attr("text-anchor", "middle")
+                  .style("font-size", "14px")
+                  .style("font-weight", "bold")
+                  .style("fill", "#0431AE")
+                  .text(formatKValue(val));
+             } else {
+                 // NORMAL BAR: Rettangolo classico
+                 g.append("rect")
+                  .attr("class", "bar")
+                  .attr("x", x(d))
+                  .attr("y", barY)
+                  .attr("width", bw)
+                  .attr("height", barHeight)
+                  .style("fill", "#bfd7fd");
+             }
+        });
 
         // --- STILI MODIFICATI PER HEADER ---
         const styles = { 
-            tm: { fill: '#0431AE', s: '32px', w: '800'}, // Ridotto a 32px
-            tt: { fill: '#3a3a3a', s: '32px', w: '300'}, // Ridotto a 32px
-            bar: { fill: '#bfd7fd'}, 
-            at: { fill: '#7b7b7a', s: '16px'}, // Mantenuto 16px (1/5 larger)
+            tm: { fill: '#0431AE', s: '32px', w: '800'},
+            tt: { fill: '#3a3a3a', s: '32px', w: '300'},
+            at: { fill: '#7b7b7a', s: '16px'}, 
             hl: { stroke: '#0431AE'} 
         };
-        // -----------------------------------
         
         svg.select('.title-main').style('font-size', styles.tm.s).style('font-weight', styles.tm.w).style('fill', styles.tm.fill);
         svg.select('.title-total').style('font-size', styles.tt.s).style('font-weight', styles.tt.w).style('fill', styles.tt.fill);
-        svg.selectAll('.bar').style('fill', styles.bar.fill);
         svg.selectAll('.x-axis .tick text, .y-axis .tick text').style('fill', styles.at.fill).style('font-size', styles.at.s);
         svg.select('.header-line').style('stroke', styles.hl.stroke);
 
@@ -1266,9 +1414,7 @@
              document.body.appendChild(a); a.click(); document.body.removeChild(a);
         });
         
-        // MODIFICATO PER USARE copySvgHighRes invece di Canvas standard
         copyBtn.on('click', () => {
-            // Seleziona il nodo SVG reale dal container D3
             const svgNode = container.select('svg').node();
             copySvgHighRes(svgNode);
         });
