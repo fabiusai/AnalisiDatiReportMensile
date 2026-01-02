@@ -893,11 +893,34 @@
             row.forEach((cell,ci)=>{
                 const t=document.createElementNS(svgns,'text'); t.setAttribute('x',cx+colWs[ci]/2); t.setAttribute('y',y+10); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size',34); t.setAttribute('fill','black');
                 if(ci===0) { 
-                    // Simple wrapping per Argomento
-                    const words = String(cell).split(' '); let line='', lines=[], max=35;
-                    words.forEach(wd=>{ if((line+wd).length>max){lines.push(line); line=wd+' ';}else{line+=wd+' ';} }); lines.push(line);
+                    // NUOVA LOGICA: Supporto 'Enter' (\n) + Wrapping automatico
+                    const rawLines = String(cell).split('\n'); // 1. Split su Enter
+                    let lines = [];
+                    const max = 35; // 2. Max chars per riga
+                    
+                    rawLines.forEach(rawLine => {
+                         const words = rawLine.split(' ');
+                         let currentLine = '';
+                         words.forEach(wd => {
+                             if((currentLine + wd).length > max) {
+                                 lines.push(currentLine);
+                                 currentLine = wd + ' ';
+                             } else {
+                                 currentLine += wd + ' ';
+                             }
+                         });
+                         lines.push(currentLine);
+                    });
+
                     t.textContent=''; 
-                    lines.forEach((ln,li)=>{ const ts=document.createElementNS(svgns,'tspan'); ts.textContent=ln; ts.setAttribute('x',cx+colWs[ci]/2); ts.setAttribute('dy',li===0?(-(lines.length-1)*20):40); t.appendChild(ts); });
+                    lines.forEach((ln,li)=>{ 
+                        const ts=document.createElementNS(svgns,'tspan'); 
+                        ts.textContent=ln; 
+                        ts.setAttribute('x',cx+colWs[ci]/2); 
+                        // Mantengo logica centraggio verticale originale
+                        ts.setAttribute('dy',li===0?(-(lines.length-1)*20):40); 
+                        t.appendChild(ts); 
+                    });
                 } else { 
                     // Ora anche l'ultima colonna (Condivisioni) è un numero
                     t.textContent=formatNumberInstChart(cell); 
