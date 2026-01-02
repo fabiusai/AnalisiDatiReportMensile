@@ -1473,8 +1473,9 @@
                 const copyText = r[cols.copy] || '';
                 const visF = formatNumber(r[cols.vis]);
                 const intF = formatNumber(r[cols.inter]);
+                const postLink = r[cols.link]; // Recupero Link
                 
-                // MODIFICA: Aggiunto pulsante copia accanto all'Argomento
+                // MODIFICA: Aggiunto pulsante copia accanto all'Argomento e Pulsante Link nel Footer
                 const card = document.createElement('div'); card.className = 'post-card';
                 card.innerHTML = `
                     <div class="post-header"><div class="post-channel-icon">${getChannelIcon(channelName)}</div><div class="post-meta"><div class="post-label">${label}</div><div class="post-date">${date}</div></div></div>
@@ -1490,6 +1491,7 @@
                     <div class="post-footer">
                         <div class="post-metrics"><div class="metric-item views"><i class="far fa-eye"></i> ${visF}</div><div class="metric-item likes"><i class="far fa-thumbs-up"></i> ${intF}</div></div>
                         <div class="post-actions-right">
+                             ${postLink ? `<a href="${postLink}" target="_blank" class="action-btn" style="text-decoration:none;"><i class="fas fa-external-link-alt"></i> Vai al post</a>` : ''}
                              <button class="action-btn blue-fill" onclick="openPostGraphModal(${idx})"><i class="fas fa-image"></i> Crea Grafica</button>
                         </div>
                     </div>`;
