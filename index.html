@@ -679,6 +679,31 @@
         
         return str + suffix;
     }
+    
+    // NUOVA FUNZIONE PER GESTIRE I DECIMALI SELEZIONABILI NEI GRAFICI LABEL
+    function formatCustomDecimals(num, decimals) {
+        num = Number(num) || 0;
+        decimals = parseInt(decimals);
+        if (isNaN(decimals)) decimals = 2; // default
+
+        // Se numero piccolo (< 1000), mostra intero senza K/M
+        if (num < 1000) return formatNumberItalian(num);
+        
+        let val, suffix;
+        if (num >= 1000000) {
+            val = num / 1000000;
+            suffix = 'M';
+        } else {
+            val = num / 1000;
+            suffix = 'K';
+        }
+        
+        // Applica i decimali fissi richiesti, ma rimuovi gli zero inutili
+        // Esempio: 1.0 -> 1, 1.50 -> 1.5, 1.00 -> 1
+        let formatted = parseFloat(val.toFixed(decimals)).toString().replace('.', ',');
+
+        return formatted + suffix;
+    }
 
     function createCopyBtn(textToCopy) {
         const b = document.createElement('button'); b.className = 'copy-btn'; b.innerHTML = '<i class="far fa-copy"></i>';
@@ -969,7 +994,7 @@
         const tableVWrapper = createTableCol('Visualizzazioni', sortedV, '<i class="far fa-eye"></i>', totalVis);
         colVis.appendChild(tableVWrapper);
 
-        // 2. Grafico Visualizzazioni (CON 2 SLIDER)
+        // 2. Grafico Visualizzazioni (CON 2 SLIDER + DECIMAL SELECT)
         const chartVWrapper = document.createElement('div'); 
         chartVWrapper.className = 'label-chart-wrapper';
         chartVWrapper.innerHTML = `
@@ -986,6 +1011,14 @@
                     <label><span><i class="fas fa-hashtag"></i> Valori</span> <span class="slider-val" id="val-v-value">1.0</span></label>
                     <input type="range" class="range-slider" id="slider-v-value" min="0.5" max="1.5" step="0.05" value="1.0">
                 </div>
+                <div class="control-group">
+                    <label><span><i class="fas fa-sort-numeric-down"></i> Decimali</span></label>
+                    <select id="sel-v-decimals" style="width:200px; padding:5px; border-radius:4px; border:1px solid #ccc;">
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                    </select>
+                </div>
             </div>
             <div id="svg-container-v"></div>`;
         colVis.appendChild(chartVWrapper);
@@ -998,7 +1031,7 @@
         const tableIWrapper = createTableCol('Interazioni', sortedI, '<i class="far fa-thumbs-up"></i>', totalInter);
         colInt.appendChild(tableIWrapper);
 
-        // 2. Grafico Interazioni (CON 2 SLIDER)
+        // 2. Grafico Interazioni (CON 2 SLIDER + DECIMAL SELECT)
         const chartIWrapper = document.createElement('div'); 
         chartIWrapper.className = 'label-chart-wrapper';
         chartIWrapper.innerHTML = `
@@ -1014,6 +1047,14 @@
                 <div class="control-group">
                     <label><span><i class="fas fa-hashtag"></i> Valori</span> <span class="slider-val" id="val-i-value">1.0</span></label>
                     <input type="range" class="range-slider" id="slider-i-value" min="0.5" max="1.5" step="0.05" value="1.0">
+                </div>
+                <div class="control-group">
+                    <label><span><i class="fas fa-sort-numeric-down"></i> Decimali</span></label>
+                    <select id="sel-i-decimals" style="width:200px; padding:5px; border-radius:4px; border:1px solid #ccc;">
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                    </select>
                 </div>
             </div>
             <div id="svg-container-i"></div>`;
@@ -1032,6 +1073,9 @@
             const scaleLabel = parseFloat(document.getElementById(`slider-${type}-label`).value);
             const scaleValue = parseFloat(document.getElementById(`slider-${type}-value`).value);
             
+            // Get Decimals
+            const decimals = parseInt(document.getElementById(`sel-${type}-decimals`).value);
+
             // Update Text indicators
             document.getElementById(`val-${type}-label`).innerText = scaleLabel.toFixed(2);
             document.getElementById(`val-${type}-value`).innerText = scaleValue.toFixed(2);
@@ -1046,8 +1090,8 @@
             const containerDiv = document.getElementById(containerId);
             containerDiv.innerHTML = '';
             
-            // Render new
-            const svg = renderLabelSvg(dataSet, metric, scaleLabel, scaleValue);
+            // Render new (pass decimals)
+            const svg = renderLabelSvg(dataSet, metric, scaleLabel, scaleValue, decimals);
             containerDiv.appendChild(svg);
 
             // Re-bind export buttons to current SVG
@@ -1068,10 +1112,11 @@
         updateChart('v');
         updateChart('i');
 
-        // Listener Slider
+        // Listener Slider & Select
         ['v', 'i'].forEach(t => {
             document.getElementById(`slider-${t}-label`).addEventListener('input', () => updateChart(t));
             document.getElementById(`slider-${t}-value`).addEventListener('input', () => updateChart(t));
+            document.getElementById(`sel-${t}-decimals`).addEventListener('change', () => updateChart(t));
         });
     }
 
@@ -1559,7 +1604,7 @@
     }
 
     // --- GENERATORE SVG CUSTOM PER LABEL (LOGICA GEOMETRICA E CENTRATURA PERFETTA) ---
-    function renderLabelSvg(data, metricName, scaleLabel, scaleValue) {
+    function renderLabelSvg(data, metricName, scaleLabel, scaleValue, decimals) {
         const svgns = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgns, 'svg');
         
@@ -1682,7 +1727,8 @@
             valText.setAttribute('font-size', valueFontSize);
             valText.setAttribute('fill', '#0431ae');
             valText.setAttribute('font-weight', 'bold');
-            valText.textContent = formatSmartKM(item.val);
+            // USA LA NUOVA FUNZIONE CON I DECIMALI SELEZIONATI
+            valText.textContent = formatCustomDecimals(item.val, decimals);
             svg.appendChild(valText);
             
             // Separator line
