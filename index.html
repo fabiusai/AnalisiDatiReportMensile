@@ -352,7 +352,7 @@
     /* --- NUOVI STILI FILTRI GLOBALI --- */
     .filters-card { background: #fff; border: 2px solid var(--primary); border-radius: var(--border-radius); margin-bottom: 2rem; overflow: hidden; box-shadow: var(--shadow); }
     .filters-header { background: var(--primary); color: white; padding: 12px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
-    .filters-body { padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; background: #fcfcfc; align-items: flex-start; }
+    .filters-body { padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; background: #fcfcfc; align-items: flex-start; }
     .filter-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
     .filter-group label { font-weight: 700; color: var(--primary); font-size: 0.85rem; text-transform: uppercase; }
     .filter-group select, .filter-group input { padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; font-family: inherit; }
@@ -442,32 +442,32 @@
             </div>
             <div class="filters-body" id="filters-content" style="display:none;">
                 <div class="filter-group">
-                    <label>Periodo (Inizio - Fine)</label>
-                    <div style="display:flex; gap:5px;">
+                    <label><i class="fas fa-calendar-alt"></i> Date Custom</label>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
                         <input type="date" id="filter-date-start" onchange="applyGlobalFilters()">
                         <input type="date" id="filter-date-end" onchange="applyGlobalFilters()">
                     </div>
                 </div>
                 <div class="filter-group">
-                    <label>Seleziona Mesi</label>
-                    <div id="filter-months-list" class="multiselect-container">
+                    <label><i class="fas fa-calendar-check"></i> Per Mesi</label>
+                    <div id="filter-months-list" class="multiselect-container" style="max-height: 100px;">
                         </div>
                 </div>
                 <div class="filter-group">
-                    <label>Canali</label>
-                    <div id="filter-channels-list" class="multiselect-container">
-                        </div>
+                    <label><i class="fas fa-layer-group"></i> Canali</label>
+                    <div id="filter-channels-list" class="multiselect-container" style="max-height: 100px;">
+                    </div>
                 </div>
                 <div class="filter-group">
-                    <label>Cerca Argomenti</label>
-                    <input type="text" id="filter-topic-search" placeholder="Scrivi per filtrare..." oninput="updateTopicList()">
-                    <div id="filter-topics-list" class="multiselect-container">
-                        </div>
+                    <label><i class="fas fa-search"></i> Cerca Argomenti</label>
+                    <input type="text" id="filter-topic-search" placeholder="Filtra argomenti..." oninput="updateTopicList()" style="margin-bottom:5px;">
+                    <div id="filter-topics-list" class="multiselect-container" style="max-height: 100px;">
+                    </div>
                 </div>
                 <div class="filter-group">
-                    <label>Label</label>
-                    <div id="filter-labels-list" class="multiselect-container">
-                        </div>
+                    <label><i class="fas fa-tag"></i> Label</label>
+                    <div id="filter-labels-list" class="multiselect-container" style="max-height: 100px;">
+                    </div>
                 </div>
                 <div class="filter-actions">
                     <button class="action-btn" onclick="resetGlobalFilters()"><i class="fas fa-undo"></i> Reset</button>
@@ -1410,31 +1410,32 @@
             acc1.innerHTML = `<summary><i class="fas fa-chart-bar"></i> Analisi Temporale</summary>`;
             const acc1Body = document.createElement('div'); acc1Body.className='accordion-content';
             
-            // --- NUOVO CONTROLLO: TOGGLE ASSE SPEZZATO + INPUTS ---
+            // --- NUOVO CONTROLLO: TOGGLE ASSE SPEZZATO + INPUTS (LAYOUT MIGLIORATO) ---
             const toggleDiv = document.createElement('div');
-            toggleDiv.style.marginBottom = '15px';
+            toggleDiv.style.marginBottom = '20px';
             toggleDiv.style.display = 'flex';
-            toggleDiv.style.alignItems = 'center';
-            toggleDiv.style.flexWrap = 'wrap';
-            toggleDiv.style.gap = '20px';
+            toggleDiv.style.flexDirection = 'column';
+            toggleDiv.style.gap = '15px';
             toggleDiv.innerHTML = `
-                <label style="cursor:pointer; font-weight:600; color:var(--primary); display:flex; align-items:center; gap:8px; font-size:0.95rem;">
-                    <input type="checkbox" id="cap-axis-toggle" style="transform:scale(1.2);">
-                    Taglia Picchi (Controllo Manuale)
-                </label>
-                
-                <div id="manual-caps-container" style="display:none; align-items:center; gap:15px; background:#f9f9f9; padding:5px 10px; border-radius:6px; border:1px solid #eee;">
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <label for="cap-input-vis" style="font-size:0.85rem; color:#555; font-weight:600;">Limite Vis:</label>
-                        <input type="number" id="cap-input-vis" style="width:100px; padding:4px; border:1px solid #ccc; border-radius:4px;">
-                    </div>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <label for="cap-input-int" style="font-size:0.85rem; color:#555; font-weight:600;">Limite Int:</label>
-                        <input type="number" id="cap-input-int" style="width:100px; padding:4px; border:1px solid #ccc; border-radius:4px;">
+                <div style="display:flex; align-items:center; flex-wrap:wrap; gap:20px; border-bottom:1px solid #eee; padding-bottom:15px;">
+                    <label style="cursor:pointer; font-weight:600; color:var(--primary); display:flex; align-items:center; gap:8px; font-size:0.95rem;">
+                        <input type="checkbox" id="cap-axis-toggle" style="transform:scale(1.2);">
+                        Taglia Picchi (Controllo Manuale)
+                    </label>
+                    
+                    <div id="manual-caps-container" style="display:none; align-items:center; gap:15px; background:#f9f9f9; padding:5px 10px; border-radius:6px; border:1px solid #eee;">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <label for="cap-input-vis" style="font-size:0.85rem; color:#555; font-weight:600;">Limite Vis:</label>
+                            <input type="number" id="cap-input-vis" style="width:100px; padding:4px; border:1px solid #ccc; border-radius:4px;">
+                        </div>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <label for="cap-input-int" style="font-size:0.85rem; color:#555; font-weight:600;">Limite Int:</label>
+                            <input type="number" id="cap-input-int" style="width:100px; padding:4px; border:1px solid #ccc; border-radius:4px;">
+                        </div>
                     </div>
                 </div>
                 
-                <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+                <div style="display: flex; gap: 10px; align-items: center;">
                     <span style="font-weight:600; color:var(--text-light); font-size:0.85rem;">RAGGRUPPA PER:</span>
                     <button class="action-btn active" id="gran-day" onclick="updateGranularity('day')">Giorno</button>
                     <button class="action-btn" id="gran-week" onclick="updateGranularity('week')">Settimana</button>
