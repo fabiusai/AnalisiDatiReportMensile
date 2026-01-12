@@ -1236,7 +1236,8 @@
 
         if (layoutStyle === 'senza-loghi') {
             const titleY = curY + 20;
-            svgHtml += `<text x="${padX}" y="${titleY}" font-size="${fontSize+4}" font-weight="700" fill="${blue}" text-transform="uppercase">${escapeXML(label)}</text>`;
+            // Modifica: label.toUpperCase() per maiuscolo forzato
+            svgHtml += `<text x="${padX}" y="${titleY}" font-size="${fontSize+4}" font-weight="700" fill="${blue}">${escapeXML(label.toUpperCase())}</text>`;
             
             let cx = padX + argW;
             CHANNELS_ORDER_PED.forEach(ch => {
@@ -1250,7 +1251,8 @@
         } else {
             const tblHeadH = fontSize + 20;
             
-            svgHtml += `<text x="${padX}" y="${curY+20}" font-size="${fontSize+4}" font-weight="700" fill="${blue}" text-transform="uppercase">${escapeXML(label)}</text>`;
+            // Modifica: label.toUpperCase() per maiuscolo forzato
+            svgHtml += `<text x="${padX}" y="${curY+20}" font-size="${fontSize+4}" font-weight="700" fill="${blue}">${escapeXML(label.toUpperCase())}</text>`;
             svgHtml += `<line x1="${padX}" y1="${curY+32}" x2="${padX+500}" y2="${curY+32}" stroke="${blue}" stroke-width="1.5"/>`;
             curY += headerH;
 
