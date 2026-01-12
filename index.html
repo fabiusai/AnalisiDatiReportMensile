@@ -368,16 +368,16 @@
 
               <div class="border-t pt-6 flex flex-col items-center gap-4">
                   <div class="layout-switcher-container">
-                      <input type="radio" name="layout-style" id="layout-con-loghi" value="con-loghi" checked onchange="togglePedColors(true)">
+                      <input type="radio" name="layout-style" id="layout-con-loghi" value="con-loghi" onchange="togglePedColors(true)">
                       <label for="layout-con-loghi" class="layout-switcher-label">Con Loghi</label>
                       
-                      <input type="radio" name="layout-style" id="layout-senza-loghi" value="senza-loghi" onchange="togglePedColors(false)">
+                      <input type="radio" name="layout-style" id="layout-senza-loghi" value="senza-loghi" checked onchange="togglePedColors(false)">
                       <label for="layout-senza-loghi" class="layout-switcher-label">Senza Loghi</label>
                       
                       <div class="switcher-glider"></div>
                   </div>
 
-                  <div id="ped-color-toggle-container" class="flex items-center gap-3 transition-opacity duration-300">
+                  <div id="ped-color-toggle-container" class="flex items-center gap-3 transition-opacity duration-300" style="opacity:0; pointer-events:none;">
                       <span class="text-sm font-medium text-gray-500">Outline Blu</span>
                       <div class="relative inline-block w-12 h-6">
                           <input type="checkbox" id="ped-logo-color-toggle" class="toggle-checkbox">
@@ -1258,7 +1258,7 @@
 
             // Table Header
             svgHtml += `<rect x="${padX}" y="${curY}" width="${width-2*padX}" height="${tblHeadH}" fill="#f8f9fa"/>`;
-            svgHtml += `<text x="${padX+20}" y="${curY+tblHeadH/2+6}" font-size="${fontSize+2}" fill="${blue}">Argomento</text>`;
+            // Testo "Argomento" rimosso come richiesto
             
             let cx = padX + argW;
             CHANNELS_ORDER_PED.forEach(ch => {
