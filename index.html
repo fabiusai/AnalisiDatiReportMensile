@@ -844,9 +844,27 @@
         const x = d3.scaleBand().domain(aggregatedData.map(d => d.date)).range([0, width]).padding(0.3);
         let yDomainMax = d3.max(aggregatedData, d => d[metric]) || 1; if (isCapped && capLimit > 0) yDomainMax = capLimit;
         const y = d3.scaleLinear().domain([0, yDomainMax]).range([height, isCapped ? 50 : 0]);
-        const xAxis = d3.axisBottom(x).tickSize(0); if (aggregatedData.length > 20) { xAxis.tickValues(x.domain().filter((d,i) => i % Math.ceil(aggregatedData.length/15) === 0)); }
-        svg.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`).call(xAxis).call(g => g.select(".domain").remove());
-        const yAxisG = svg.append("g").attr("class", "y-axis").call(d3.axisLeft(y).ticks(5).tickFormat(d => formatKValue(d))); yAxisG.call(g => g.select(".domain").remove()); yAxisG.selectAll(".tick line").clone().attr("x2", width).attr("stroke", "#e0e0e0").attr("stroke-opacity", 0.7);
+         const xAxis = d3.axisBottom(x).tickSize(0); if (aggregatedData.length > 20) { xAxis.tickValues(x.domain().filter((d,i) => i % Math.ceil(aggregatedData.length/15) === 0)); }
+        
+        // Asse X con stili Inline per persistenza in export SVG
+        svg.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`)
+           .call(xAxis).call(g => g.select(".domain").remove())
+           .selectAll("text")
+           .style("font-size", "14px")
+           .style("font-family", "'Nunito Sans', sans-serif")
+           .style("fill", "#7b7b7a");
+
+        // Asse Y con stili Inline per persistenza in export SVG
+        const yAxisG = svg.append("g").attr("class", "y-axis")
+           .call(d3.axisLeft(y).ticks(5).tickFormat(d => formatKValue(d))); 
+        
+        yAxisG.call(g => g.select(".domain").remove()); 
+        yAxisG.selectAll(".tick line").clone().attr("x2", width).attr("stroke", "#e0e0e0").attr("stroke-opacity", 0.7);
+        
+        yAxisG.selectAll("text")
+           .style("font-size", "14px")
+           .style("font-family", "'Nunito Sans', sans-serif")
+           .style("fill", "#7b7b7a");
         const header = svg.append("g").attr("class", "chart-header").attr("transform", `translate(${-40}, 0)`);
         header.append("text").attr("y", -30).html(`<tspan style="font-size:32px; font-weight:800; fill:#0431AE;">${title}</tspan><tspan style="font-size:32px; font-weight:300; fill:#3a3a3a;" dx="20">Totale: ${formatKValue(total)}</tspan>`);
         header.append("line").attr("x1", 0).attr("x2", width / 2).attr("y1", -15).attr("y2", -15).attr("stroke", "#0431AE");
