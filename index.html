@@ -565,6 +565,7 @@
         // NUOVO: Aggiorna anche PED con i dati filtrati
         try {
             const pedData = processDataPedFromObjects(data);
+            globalProcessedDataPed = pedData; // FIX: Aggiorna la variabile globale per l'editor
             displayResultsPed(pedData);
         } catch(e) { console.error("PED Update Error", e); }
     }
@@ -1136,10 +1137,12 @@
             svgContainer.id = `ped-svg-${label.replace(/[^a-z0-9]/gi, '_')}`;
             svgContainer.innerHTML = svgString;
 
+            // Escape per evitare errori JS con apostrofi nel nome label
+            const safeLabel = label.replace(/'/g, "\\'");
             const actionsHtml = `
                 <div style="display:flex; justify-content:center; gap:10px; margin-top:1.5rem;">
-                    <button class="action-btn" onclick="openEditModalPed('${label}')"><i class="fas fa-sort"></i> Modifica & Ordina</button>
-                    <button class="action-btn yellow" onclick="downloadSinglePed('${label}')"><i class="fas fa-download"></i> Scarica SVG</button>
+                    <button class="action-btn" onclick="openEditModalPed('${safeLabel}')"><i class="fas fa-sort"></i> Modifica & Ordina</button>
+                    <button class="action-btn yellow" onclick="downloadSinglePed('${safeLabel}')"><i class="fas fa-download"></i> Scarica SVG</button>
                 </div>`;
 
             card.innerHTML = headerHtml;
