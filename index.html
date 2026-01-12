@@ -25,7 +25,6 @@
     }
 
     :root {
-      /* Colori App Base */
       --primary: #00529F;
       --primary-hover: #003e7e;
       --bg: #f4f6f8;
@@ -35,7 +34,6 @@
       --border-radius: 12px;
       --shadow: 0 4px 12px rgba(0,0,0,0.05);
       
-      /* Variabili per Grafici */
       --chart-font: 'Nunito Sans', sans-serif;
       --header-total-grey: #3a3a3a;
       --chart-text-grey: #7b7b7a;
@@ -229,6 +227,34 @@
     .toast.success { background: #27ae60; }
     .toast.error { background: #e74c3c; }
     .toast.warning { background: #f39c12; }
+
+/* --- INTEGRAZIONE STILI PED NEW --- */
+    /* Toggle Switch personalizzato per colori */
+    .toggle-checkbox:checked { right: 0; border-color: #68D391; }
+    .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
+    .toggle-label { width: 40px; height: 24px; background-color: #ccc; border-radius: 9999px; position: relative; cursor: pointer; transition: background-color 0.2s; }
+    .toggle-checkbox { position: absolute; right: 16px; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: white; border: 2px solid #ccc; appearance: none; cursor: pointer; transition: all 0.2s; }
+    
+    /* Stili Drag & Drop nella Modale */
+    .modal-row-ped { display: flex; align-items: center; gap: 10px; padding: 10px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 8px; transition: border-color 0.2s; }
+    .modal-row-ped:hover { border-color: var(--primary); }
+    .drag-handle-ped { cursor: grab; color: #9ca3af; padding: 4px; }
+    .drag-handle-ped:active { cursor: grabbing; }
+    .ped-input-edit { width: 100%; padding: 8px; border: 1px solid #cbd5e0; border-radius: 4px; font-weight: 600; color: #374151; }
+    
+    /* Checkbox PPT personalizzata */
+    .ppt-checkbox { width: 20px; height: 20px; cursor: pointer; accent-color: #16a34a; }
+    
+    /* Layout Switcher */
+    .layout-switcher-container { position: relative; display: flex; background: #f3f4f6; border-radius: 9999px; padding: 4px; width: fit-content; margin: 0 auto; }
+    .layout-switcher-container input { display: none; }
+    .layout-switcher-label { position: relative; z-index: 10; padding: 8px 20px; font-weight: 600; font-size: 0.9rem; cursor: pointer; color: #6b7280; transition: color 0.3s; }
+    .layout-switcher-container input:checked + label { color: var(--primary); }
+    .switcher-glider { position: absolute; top: 4px; bottom: 4px; width: 50%; background: white; border-radius: 9999px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.3s ease; left: 0; }
+    #layout-con-loghi:checked ~ .switcher-glider { transform: translateX(4px); width: calc(50% - 8px); }
+    #layout-senza-loghi:checked ~ .switcher-glider { transform: translateX(100%); width: calc(50% - 4px); }
+
+
   </style>
 </head>
 <body>
@@ -260,10 +286,21 @@
 
   <div id="edit-modal-ped" class="modal-ped">
       <div class="modal-content-ped">
-          <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold text-gray-800">Modifica: <span id="modal-label-title-ped" class="text-blue-700"></span></h3><button onclick="closeModalPed()" class="text-gray-500 hover:text-red-500"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
-          <p class="text-sm text-gray-500 mb-3 bg-blue-50 p-2 rounded">Trascina per ordinare.</p>
+          <div class="flex justify-between items-center mb-4">
+              <h3 class="text-xl font-bold text-gray-800">Modifica e Ordina: <span id="modal-label-title-ped" class="text-blue-700"></span></h3>
+              <button onclick="closeModalPed()" class="text-gray-500 hover:text-red-500">
+                  <i class="fas fa-times fa-lg"></i>
+              </button>
+          </div>
+          <div class="bg-blue-50 p-3 rounded mb-3 text-sm text-gray-600 flex items-center gap-2">
+              <i class="fas fa-info-circle text-blue-600"></i>
+              <span>Trascina l'icona a sinistra per riordinare le righe. Modifica il testo per cambiare l'argomento nel grafico.</span>
+          </div>
           <div id="modal-body-ped" class="flex-1 overflow-y-auto pr-2 space-y-2"></div>
-          <div class="mt-6 pt-4 border-t flex justify-end gap-3"><button onclick="closeModalPed()" class="px-4 py-2 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg">Annulla</button><button id="save-edits-btn-ped" class="btn-primary-ped px-6 py-2 rounded-lg font-bold">Salva</button></div>
+          <div class="mt-6 pt-4 border-t flex justify-end gap-3">
+              <button onclick="closeModalPed()" class="action-btn">Annulla</button>
+              <button id="save-edits-btn-ped" class="action-btn active">Salva Modifiche</button>
+          </div>
       </div>
   </div>
 
@@ -311,28 +348,58 @@
       <div id="tab-topics" class="tab-content"></div>
       <div id="tab-channels" class="tab-content"></div>
       
-      <div id="tab-ped" class="tab-content">
-          <div class="card p-6 md:p-8 max-w-4xl mx-auto">
-              <div class="text-center mb-4"><h2 class="text-2xl font-bold text-gray-700" style="color:var(--primary);">Configurazioni Grafica Report PED</h2><p class="mt-2 text-gray-500">I dati sono presi automaticamente dal file caricato.</p></div>
-              <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><label class="block text-sm font-medium text-gray-700">Dimensione Testo (px)</label><input type="number" id="ped-font-size-input" value="18" min="10" max="40" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"></div>
-                  <div><label class="block text-sm font-medium text-gray-700">Interlinea (px)</label><input type="number" id="ped-line-height-input" value="23" min="20" max="50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"></div>
+     <div id="tab-ped" class="tab-content">
+          <div class="card p-6 md:p-8 max-w-5xl mx-auto">
+              <div class="text-center mb-6">
+                  <h2 class="text-2xl font-bold" style="color:var(--primary);"><i class="fas fa-pencil-ruler"></i> Generatore Report PED</h2>
+                  <p class="mt-2 text-gray-500">Configura la grafica. I dati sono filtrati automaticamente dalla dashboard.</p>
               </div>
-              <div class="mt-6 border-t pt-6">
-                  <label class="block text-sm font-medium text-gray-700 mb-2 text-center">Stile Grafico</label>
-                  <div class="flex justify-center gap-4">
-                      <label><input type="radio" name="layout-style" value="con-loghi" checked> Con Loghi</label>
-                      <label><input type="radio" name="layout-style" value="senza-loghi"> Senza Loghi</label>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                      <label class="block text-sm font-bold text-gray-700 mb-1">Dimensione Testo (px)</label>
+                      <input type="number" id="ped-font-size-input" value="18" min="10" max="40" class="w-full p-2 border rounded border-gray-300 focus:border-blue-500">
                   </div>
-                  <div id="ped-color-toggle-container" class="mt-4 flex justify-center items-center gap-3">
-                      <span>Outline Blu</span>
-                      <input type="checkbox" id="ped-logo-color-toggle">
-                      <span>Colorati</span>
+                  <div>
+                      <label class="block text-sm font-bold text-gray-700 mb-1">Interlinea (px)</label>
+                      <input type="number" id="ped-line-height-input" value="23" min="20" max="50" class="w-full p-2 border rounded border-gray-300 focus:border-blue-500">
                   </div>
               </div>
-              <div class="mt-6 flex justify-center"><button onclick="refreshPedView()" class="btn-primary-ped font-bold py-3 px-8 rounded-full shadow-lg">Applica Modifiche</button></div>
+
+              <div class="border-t pt-6 flex flex-col items-center gap-4">
+                  <div class="layout-switcher-container">
+                      <input type="radio" name="layout-style" id="layout-con-loghi" value="con-loghi" checked onchange="togglePedColors(true)">
+                      <label for="layout-con-loghi" class="layout-switcher-label">Con Loghi</label>
+                      
+                      <input type="radio" name="layout-style" id="layout-senza-loghi" value="senza-loghi" onchange="togglePedColors(false)">
+                      <label for="layout-senza-loghi" class="layout-switcher-label">Senza Loghi</label>
+                      
+                      <div class="switcher-glider"></div>
+                  </div>
+
+                  <div id="ped-color-toggle-container" class="flex items-center gap-3 transition-opacity duration-300">
+                      <span class="text-sm font-medium text-gray-500">Outline Blu</span>
+                      <div class="relative inline-block w-12 h-6">
+                          <input type="checkbox" id="ped-logo-color-toggle" class="toggle-checkbox">
+                          <label for="ped-logo-color-toggle" class="toggle-label"></label>
+                      </div>
+                      <span class="text-sm font-bold text-gray-700">Colorati</span>
+                  </div>
+              </div>
+
+              <div class="mt-8 flex justify-center gap-4">
+                  <button onclick="refreshPedView()" class="action-btn blue-fill py-3 px-8 text-lg shadow-lg">
+                      <i class="fas fa-sync"></i> Genera / Aggiorna Grafici
+                  </button>
+                  <button onclick="downloadAllPedZip()" class="action-btn yellow py-3 px-8 text-lg shadow-lg">
+                      <i class="fas fa-file-archive"></i> Scarica ZIP Tutto
+                  </button>
+              </div>
           </div>
-          <div id="ped-results-container" class="mt-12 container mx-auto p-4"></div>
+
+          <div id="ped-results-container" class="mt-8 container mx-auto space-y-8"></div>
+      </div>
+               
       </div>
     </div>
   </div>
@@ -344,7 +411,6 @@
     const mainContent = document.getElementById('main-content');
     let workbookData = null;
     let rawData = [];
-    let rawDataArray = []; // Variabile globale per PED
     let filteredData = [];
     let displayData = [];
     let cols = {};
@@ -392,9 +458,6 @@
             workbookData = XLSX.read(new Uint8Array(evt.target.result), { type: 'array', cellDates: true });
             rawData = XLSX.utils.sheet_to_json(workbookData.Sheets[workbookData.SheetNames[0]], { defval: '' });
             
-            // Dati per PED (salvati in variabile globale)
-            rawDataArray = XLSX.utils.sheet_to_json(workbookData.Sheets[workbookData.SheetNames[0]], { header: 1, defval: "" });
-
             // LOGICA APP 1
             if (rawData.length > 0) {
                 cols = {
@@ -417,17 +480,6 @@
             displayData = [...filteredData];
             populateFilterUI();
             renderAll(displayData);
-
-            // LOGICA APP 2 (PED)
-            if(rawDataArray && rawDataArray.length > 0) {
-                try {
-                    globalProcessedDataPed = processDataPed(rawDataArray);
-                    displayResultsPed(globalProcessedDataPed);
-                } catch (pedErr) {
-                    console.error("Errore elaborazione PED:", pedErr);
-                    document.getElementById('ped-results-container').innerHTML = `<p style="color:red">Errore PED: ${pedErr.message}</p>`;
-                }
-            }
 
             mainContent.style.display = 'block'; jsonExecBtn.style.display = 'inline-block';
             uploadLabel.innerHTML = `✅ <strong>${file.name}</strong> caricato con successo.`;
@@ -467,6 +519,8 @@
     function renderCheckboxList(containerId, items, type) { document.getElementById(containerId).innerHTML = items.map(item => `<div class="multiselect-item"><input type="checkbox" value="${item}" data-type="${type}" onchange="updateFilterState(this)"><span>${item}</span></div>`).join(''); }
     window.updateTopicList = function() { const search = document.getElementById('filter-topic-search').value.toLowerCase(); document.querySelectorAll('#filter-topics-list .multiselect-item').forEach(it => { it.style.display = it.innerText.toLowerCase().includes(search) ? 'flex' : 'none'; }); }
     window.updateFilterState = function(el) { if(el.checked) { if(!activeFilters[el.getAttribute('data-type')].includes(el.value)) activeFilters[el.getAttribute('data-type')].push(el.value); } else { activeFilters[el.getAttribute('data-type')] = activeFilters[el.getAttribute('data-type')].filter(v => v !== el.value); } applyGlobalFilters(); }
+    
+    // --- FUNCTION CHIAVE: Applica filtri a TUTTO (incluso PED) ---
     window.applyGlobalFilters = function() {
         const start = document.getElementById('filter-date-start').value; const end = document.getElementById('filter-date-end').value;
         displayData = filteredData.filter(r => {
@@ -480,6 +534,7 @@
         });
         renderAll(displayData);
     }
+    
     window.resetGlobalFilters = function() { activeFilters = { topics: [], channels: [], labels: [], months: [], dateStart: null, dateEnd: null }; document.querySelectorAll('.multiselect-container input').forEach(i => i.checked = false); document.getElementById('filter-date-start').value = ''; document.getElementById('filter-date-end').value = ''; displayData = [...filteredData]; renderAll(displayData); }
     function formatDateForCompare(t) { if(!t) return ''; let dateObj; if (t instanceof Date) dateObj = t; else if (typeof t === 'number') dateObj = new Date((t - 25569) * 86400 * 1000); else { if(/^\d{2}\/\d{2}\/\d{2,4}$/.test(t)) { const parts = t.split('/'); const y = parts[2].length === 2 ? '20' + parts[2] : parts[2]; return `${y}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`; } if(/^\d{4}-\d{2}-\d{2}$/.test(t)) return t; dateObj = new Date(t); } if(!isNaN(dateObj.getTime())) { const y = dateObj.getFullYear(); const m = String(dateObj.getMonth() + 1).padStart(2, '0'); const d = String(dateObj.getDate()).padStart(2, '0'); return `${y}-${m}-${d}`; } return ''; }
     function showToast(msg, type) { const c = document.getElementById('toast-container'); const icon = type === 'success' ? '<i class="fas fa-check-circle"></i>' : (type === 'warning' ? '<i class="fas fa-exclamation-triangle"></i>' : '<i class="fas fa-exclamation-circle"></i>'); const t = document.createElement('div'); t.className = `toast ${type}`; t.innerHTML = `${icon} ${msg}`; c.appendChild(t); setTimeout(() => t.remove(), 4000); }
@@ -501,7 +556,18 @@
     function downloadTransparentSvg(svgElement, filename) { if (!svgElement) return; const serializer = new XMLSerializer(); let source = serializer.serializeToString(svgElement); if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){ source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"'); } source = source.replace('>', '><style>@font-face { font-family: "Avenir Next LT Pro"; src: url("https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2") format("woff2"); } text { font-family: "Avenir Next LT Pro", sans-serif; }</style>'); const blob = new Blob([source], {type: 'image/svg+xml;charset=utf-8'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
 
     // --- RENDER FUNCTIONS ---
-    function renderAll(data) { renderOverview(data); renderInstitutional(data); renderLabels(data); renderTopics(data); renderChannels(data); }
+    function renderAll(data) { 
+        renderOverview(data); 
+        renderInstitutional(data); 
+        renderLabels(data); 
+        renderTopics(data); 
+        renderChannels(data);
+        // NUOVO: Aggiorna anche PED con i dati filtrati
+        try {
+            const pedData = processDataPedFromObjects(data);
+            displayResultsPed(pedData);
+        } catch(e) { console.error("PED Update Error", e); }
+    }
 
     // 1. Overview
     function renderOverview(data) {
@@ -830,179 +896,431 @@
     function downloadPostSvg() { const svgEl = document.querySelector('#pg-preview-container svg'); if(!svgEl) return; const filename = `Grafica_${currentPostData.label}_${currentPostData.argomento.substring(0,10)}.svg`; downloadSvgDirect(svgEl, filename); showToast("SVG Scaricato", "success"); }
     function copyPostSvg() { const svgEl = document.querySelector('#pg-preview-container svg'); if(!svgEl) return; copySvgHighRes(svgEl); }
 
-    // --- PED FUNCTIONS ---
-    function processDataPed(data) {
-        if (!data || data.length < 2) throw new Error("File vuoto o con solo intestazioni.");
-        const headers = data[0].map(h => (h || "").toString().trim());
-        const labelIndex = headers.indexOf("Label");
-        const canaleIndex = headers.indexOf("Canale");
-        const istitutionaleIndex = headers.indexOf("Istituzionale");
-        const argomentoIndex = headers.indexOf("Argomento");
-        if([labelIndex, canaleIndex, argomentoIndex].includes(-1)) throw new Error("Intestazioni PED mancanti (Label, Canale, Argomento).");
+    // --- JSON EXECUTIVE LOGIC UPDATED ---
+    jsonExecBtn.addEventListener('click', () => {
+        if (!displayData || displayData.length === 0) { showToast("Nessun dato!", "error"); return; }
+        
+        // 1. CONTEGGI CANALI
+        const counts = { fb:0, ig:0, wa:0, tw:0, li:0, yt:0 };
+        displayData.forEach(r => { 
+            const c = String(r[cols.canale]).toLowerCase(); 
+            if(c.includes('facebook')) counts.fb++; 
+            else if(c.includes('instagram')) counts.ig++; 
+            else if(c.includes('whatsapp')) counts.wa++; 
+            else if(c.includes('twitter')||c.includes('x')) counts.tw++; 
+            else if(c.includes('linkedin')) counts.li++; 
+            else if(c.includes('youtube')) counts.yt++; 
+        });
+
+        // 2. BEST PERFORMERS
+        const topics = {};
+        displayData.forEach(r => {
+            const arg = r[cols.arg] || 'ND';
+            if(!topics[arg]) topics[arg] = 0;
+            topics[arg] += Number(r[cols.vis]) || 0;
+        });
+        const top3 = Object.entries(topics).sort((a,b) => b[1] - a[1]).slice(0,3);
+
+        // 3. ISTITUZIONALI
+        const colIst = findCol('istituzionale', displayData[0]) || 'Istituzionale';
+        const institData = displayData.filter(r => String(r[colIst]).trim() === '1');
+        const instStats = {
+            num: institData.length,
+            vis: institData.reduce((s,r) => s + (Number(r[cols.vis])||0), 0),
+            inter: institData.reduce((s,r) => s + ((Number(r[cols.like])||0) + (Number(r[cols.inter])||0)), 0)
+        };
+
+        // HELPER FORMATTING (Es: 8,19M o 517K)
+        const formatK = (n) => {
+            if (n >= 1000000) {
+                let v = (n / 1000000).toFixed(2).replace('.', ',');
+                return v.replace(/,00$/, '') + 'M';
+            }
+            if (n >= 1000) {
+                return Math.round(n / 1000) + 'K';
+            }
+            return n.toString();
+        };
+
+        // COSTRUZIONE OGGETTO JSON
+        const exportJson = {
+            "__COMMENTO_SEZIONE_VOLUMI__": "--- AMBITO 2: Volumi Post ---",
+            "Numero post Facebook": counts.fb.toString(),
+            "Numero post Instagram": counts.ig.toString(),
+            "Numero post Linkedin": counts.li.toString(),
+            "Numero post X (Twitter)": counts.tw.toString(),
+            "Numero post Whatsapp": counts.wa.toString(),
+            "Numero post Youtube": counts.yt.toString(),
+            "__COMMENTO_SEZIONE_BEST__": "--- AMBITO 3: Best Performer ---"
+        };
+
+        // Aggiungo Top 3 dinamicamente
+        top3.forEach((t, i) => {
+            const idx = i + 1;
+            exportJson[`Argomenti più visualizzati ${idx}`] = t[0];
+            exportJson[`Visualizzazione Argomenti più visualizzati ${idx}`] = formatK(t[1]);
+        });
+
+        // Aggiungo Istituzionali
+        exportJson["__COMMENTO_SEZIONE_ISTITUZIONALI__"] = "--- DATI ISTITUZIONALI ---";
+        exportJson["Numero post istituzionali"] = instStats.num.toString();
+        exportJson["Visualizzazione post istituzionali"] = formatK(instStats.vis);
+        exportJson["Like + interazioni post istituzionali"] = formatK(instStats.inter);
+
+        // Download
+        const d = new Date();
+        const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+        const h = String(d.getHours()).padStart(2,'0'), min = String(d.getMinutes()).padStart(2,'0'), s = String(d.getSeconds()).padStart(2,'0');
+        const filename = `ES2_${y}_${m}_${day}_${h}_${min}_${s}_editoriale.json`;
+        
+        const blob = new Blob([JSON.stringify(exportJson, null, 2)], { type: "application/json" });
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob); 
+        a.download = filename; 
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a);
+        showToast("JSON Executive scaricato!", "success");
+    });
+
+    // --- LOGICA COMPLETA PED (ELABORAZIONE + VISUALIZZAZIONE) ---
+
+    // Helper UI: Gestione visibilità toggle colori
+    window.togglePedColors = function(showLogos) {
+        const container = document.getElementById('ped-color-toggle-container');
+        if (showLogos) {
+            container.style.opacity = '1'; container.style.pointerEvents = 'auto';
+        } else {
+            container.style.opacity = '0'; container.style.pointerEvents = 'none';
+        }
+    }
+
+    // 1. ELABORAZIONE DATI (Core)
+    function processDataPedFromObjects(filteredObjArray) {
         const results = {};
-        for (const row of data.slice(1)) {
-            if (row.length === 0 || row.every(cell => cell === "")) continue;
-            const label = (row[labelIndex] || "").toString().trim();
-            const canale = (row[canaleIndex] || "").toString().trim();
-            const argomento = (row[argomentoIndex] || "N/D").toString().trim();
-            const isArgomentoIstituzionale = (row[istitutionaleIndex] || "").toString().trim() === '1';
-            if (!label || !canale) continue;
-            if (!results[label]) results[label] = { totalPosts: 0, channels: { Facebook: 0, Linkedin: 0, Instagram: 0, X: 0, Youtube: 0, Whatsapp: 0 }, argomenti: {} };
-            if (!results[label].argomenti[argomento]) results[label].argomenti[argomento] = { channels: { Facebook: 0, Linkedin: 0, Instagram: 0, X: 0, Youtube: 0, Whatsapp: 0 }, totalPosts: 0, isIstituzionale: false, displayText: argomento, customIndex: undefined };
-            if (isArgomentoIstituzionale) results[label].argomenti[argomento].isIstituzionale = true;
+        if(!filteredObjArray || filteredObjArray.length === 0) return {};
+
+        filteredObjArray.forEach(row => {
+            const label = row[cols.label]; 
+            const canale = row[cols.canale];
+            
+            if (!label || !canale) return;
+
+            const argomento = row[cols.arg] || "N/D";
+            let isIst = false;
+            if (cols.istituzionale && row[cols.istituzionale] !== undefined) {
+                isIst = String(row[cols.istituzionale]).trim() === '1';
+            }
+
+            if (!results[label]) {
+                results[label] = { totalPosts: 0, channels: { Facebook: 0, Linkedin: 0, Instagram: 0, X: 0, Youtube: 0, Whatsapp: 0 }, argomenti: {} };
+            }
+            if (!results[label].argomenti[argomento]) {
+                results[label].argomenti[argomento] = { 
+                    channels: { Facebook: 0, Linkedin: 0, Instagram: 0, X: 0, Youtube: 0, Whatsapp: 0 }, 
+                    totalPosts: 0, 
+                    isIstituzionale: false, 
+                    displayText: argomento, 
+                    customIndex: undefined 
+                };
+            }
+            
+            if (isIst) { results[label].argomenti[argomento].isIstituzionale = true; }
+
             let matchedChannel = null;
-            const canalLower = canale.toLowerCase();
+            const canalLower = String(canale).toLowerCase();
             for (const channelName of CHANNELS_ORDER_PED) {
                 const key = channelName.toLowerCase();
-                if (key === 'x') { if (canalLower.includes('x') || canalLower.includes('twitter')) { matchedChannel = channelName; break; } } 
-                else { if (canalLower.includes(key)) { matchedChannel = channelName; break; } }
+                if (key === 'x') { 
+                    if (canalLower.includes('x') || canalLower.includes('twitter')) { matchedChannel = channelName; break; } 
+                } else { 
+                    if (canalLower.includes(key)) { matchedChannel = channelName; break; } 
+                }
             }
+
             if (matchedChannel) {
-                if(!results[label].argomenti[argomento].isIstituzionale && isArgomentoIstituzionale) results[label].argomenti[argomento].isIstituzionale = true;
-                results[label].argomenti[argomento].channels[matchedChannel]++; results[label].argomenti[argomento].totalPosts++; results[label].channels[matchedChannel]++; results[label].totalPosts++;
+                if(!results[label].argomenti[argomento].isIstituzionale && isIst) { results[label].argomenti[argomento].isIstituzionale = true; }
+                results[label].argomenti[argomento].channels[matchedChannel]++;
+                results[label].argomenti[argomento].totalPosts++;
+                results[label].channels[matchedChannel]++;
+                results[label].totalPosts++;
             }
+        });
+        
+        for(const label in results) {
+            for(const arg in results[label].argomenti) {
+                if(results[label].argomenti[arg].totalPosts === 0) delete results[label].argomenti[arg];
+            }
+            if (results[label].totalPosts === 0) delete results[label];
         }
-        for(const label in results) { for(const arg in results[label].argomenti) { if(results[label].argomenti[arg].totalPosts === 0) delete results[label].argomenti[arg]; } }
         return results;
     }
 
+    // 2. REFRESH & DISPLAY
+    window.refreshPedView = function() {
+        if (!displayData || displayData.length === 0) {
+            showToast("Nessun dato disponibile. Carica un file o controlla i filtri.", "warning");
+            return;
+        }
+        
+        const newData = processDataPedFromObjects(displayData);
+        
+        // Merge con eventuali modifiche manuali esistenti (es. ordinamento custom)
+        if (globalProcessedDataPed && Object.keys(globalProcessedDataPed).length > 0) {
+            for (const lbl in newData) {
+                if (globalProcessedDataPed[lbl]) {
+                    for (const arg in newData[lbl].argomenti) {
+                        if (globalProcessedDataPed[lbl].argomenti[arg]) {
+                            newData[lbl].argomenti[arg].displayText = globalProcessedDataPed[lbl].argomenti[arg].displayText;
+                            newData[lbl].argomenti[arg].customIndex = globalProcessedDataPed[lbl].argomenti[arg].customIndex;
+                        }
+                    }
+                }
+            }
+        }
+        
+        globalProcessedDataPed = newData;
+        displayResultsPed(globalProcessedDataPed);
+        showToast("Grafici PED aggiornati con i dati filtrati!", "success");
+    }
+
     function displayResultsPed(processedData) {
-        const resultsContainerPed = document.getElementById('ped-results-container'); resultsContainerPed.innerHTML = '';
-        if (Object.keys(processedData).length === 0) { resultsContainerPed.innerHTML = '<p class="text-center text-gray-500">Nessun dato PED.</p>'; return; }
-        const headerDiv = document.createElement('div'); headerDiv.className = 'flex justify-between items-center mb-8';
-        const title = document.createElement('h2'); title.className = 'text-xl font-bold text-gray-800'; title.textContent = 'Anteprima Report'; headerDiv.appendChild(title);
-        const downloadAllButton = document.createElement('button'); downloadAllButton.id = 'download-all-btn-ped';
-        downloadAllButton.className = 'action-btn blue-fill font-bold py-2 px-6 rounded-full shadow-lg';
-        downloadAllButton.innerHTML = `<i class="fas fa-download mr-2"></i> Scarica Tutto (.zip)`;
-        downloadAllButton.onclick = () => downloadAllSVGPed(processedData);
-        headerDiv.appendChild(downloadAllButton);
-        resultsContainerPed.appendChild(headerDiv);
-        const grid = document.createElement('div'); grid.className = 'grid grid-cols-1 xl:grid-cols-1 gap-8 items-start';
-        const layoutStyle = document.querySelector('input[name="layout-style"]:checked') ? document.querySelector('input[name="layout-style"]:checked').value : 'con-loghi';
+        const container = document.getElementById('ped-results-container');
+        container.innerHTML = '';
+        
+        if (Object.keys(processedData).length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:2rem; color:#888;"><i class="fas fa-inbox fa-3x" style="margin-bottom:1rem; opacity:0.5;"></i><br>Nessun dato trovato per i filtri correnti.</div>';
+            return;
+        }
+
+        const layoutStyle = document.querySelector('input[name="layout-style"]:checked').value;
+        const useColors = document.getElementById('ped-logo-color-toggle').checked;
+
         for (const label in processedData) {
             const data = processedData[label];
-            const svgString = generateSVGPed(label, data, layoutStyle);
-            const item = document.createElement('div'); item.className = 'bg-white rounded-xl shadow-lg p-6 relative border border-gray-200'; item.dataset.label = label; 
-            const headerControls = `<div class="w-full flex justify-between items-center mb-4 px-2"><span class="text-sm font-bold text-gray-400 uppercase tracking-wider">${label}</span><label class="flex items-center space-x-2 cursor-pointer select-none"><input type="checkbox" class="ppt-checkbox-ped form-checkbox h-5 w-5 text-green-600 rounded focus:ring-green-500" data-label="${label}"><span class="text-sm font-semibold text-gray-600">Inserito nel PPT</span></label></div>`;
-            const svgContainer = document.createElement('div'); svgContainer.className = 'w-full overflow-x-auto rounded-lg bg-gray-50 mb-4'; svgContainer.id = `svg-container-ped-${label.replace(/[^a-z0-9]/gi, '_')}`; svgContainer.innerHTML = svgString;
-            const buttonsContainer = document.createElement('div'); buttonsContainer.className = 'mt-6 flex flex-wrap gap-4 justify-center';
-            buttonsContainer.innerHTML = `<button class="action-btn" onclick="openEditModalPed('${label}')">Modifica & Ordina</button> <button class="action-btn" onclick="downloadSinglePed('${label}')">Scarica SVG</button>`;
-            item.innerHTML = headerControls; item.appendChild(svgContainer); item.appendChild(buttonsContainer); grid.appendChild(item);
+            const svgString = generatePedSVG(label, data, layoutStyle, useColors);
+
+            const card = document.createElement('div');
+            card.className = 'card-ped p-4';
+            
+            // Header Card
+            const headerHtml = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <span style="font-weight:800; color:#aaa; font-size:0.9rem; letter-spacing:1px; text-transform:uppercase;">${label}</span>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" class="ppt-checkbox" onchange="this.closest('.card-ped').classList.toggle('is-completed', this.checked)">
+                        <span style="font-size:0.85rem; font-weight:600; color:#666;">Inserito nel PPT</span>
+                    </label>
+                </div>`;
+            
+            const svgContainer = document.createElement('div');
+            svgContainer.className = 'svg-container-ped';
+            svgContainer.id = `ped-svg-${label.replace(/[^a-z0-9]/gi, '_')}`;
+            svgContainer.innerHTML = svgString;
+
+            const actionsHtml = `
+                <div style="display:flex; justify-content:center; gap:10px; margin-top:1.5rem;">
+                    <button class="action-btn" onclick="openEditModalPed('${label}')"><i class="fas fa-sort"></i> Modifica & Ordina</button>
+                    <button class="action-btn yellow" onclick="downloadSinglePed('${label}')"><i class="fas fa-download"></i> Scarica SVG</button>
+                </div>`;
+
+            card.innerHTML = headerHtml;
+            card.appendChild(svgContainer);
+            card.insertAdjacentHTML('beforeend', actionsHtml);
+            container.appendChild(card);
         }
-        resultsContainerPed.appendChild(grid);
-        document.querySelectorAll('.ppt-checkbox-ped').forEach(chk => { chk.addEventListener('change', (e) => { const card = e.target.closest('div[data-label]'); if(e.target.checked) card.classList.add('border-green-500', 'bg-green-50'); else card.classList.remove('border-green-500', 'bg-green-50'); }); });
     }
 
-    function openEditModalPed(label) {
-        currentEditLabelPed = label; document.getElementById('modal-label-title-ped').textContent = label;
-        const modalBody = document.getElementById('modal-body-ped'); modalBody.innerHTML = '';
-        const data = globalProcessedDataPed[label]; const sortedArgomenti = getSortedEntriesPed(data);
-        sortedArgomenti.forEach(([key, details]) => {
-            const row = document.createElement('div'); row.className = 'modal-row flex items-center gap-3 p-3 bg-white rounded border border-gray-200 shadow-sm transition-colors hover:border-blue-300 group';
-            const handle = document.createElement('div'); handle.className = 'drag-handle cursor-move text-gray-400 hover:text-gray-600 p-1'; handle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><circle cx="4" cy="6" r="1"></circle><circle cx="4" cy="12" r="1"></circle><circle cx="4" cy="18" r="1"></circle></svg>`;
-            const contentDiv = document.createElement('div'); contentDiv.className = 'flex-1';
-            const labelSmall = document.createElement('div'); labelSmall.className = 'text-xs text-gray-500 font-mono mb-1 truncate'; labelSmall.textContent = `Originale: "${key}"`;
-            const input = document.createElement('input'); input.type = 'text'; input.className = 'w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-semibold text-gray-700'; input.value = details.displayText || key; input.dataset.key = key;
-            contentDiv.appendChild(labelSmall); contentDiv.appendChild(input); row.appendChild(handle); row.appendChild(contentDiv); modalBody.appendChild(row);
+    // 3. MODALE EDIT & SORTING
+    window.openEditModalPed = function(label) {
+        currentEditLabelPed = label;
+        document.getElementById('modal-label-title-ped').textContent = label;
+        const mb = document.getElementById('modal-body-ped');
+        mb.innerHTML = '';
+
+        const data = globalProcessedDataPed[label];
+        const sortedArgs = getSortedEntriesPed(data);
+
+        sortedArgs.forEach(([key, details], idx) => {
+            const row = document.createElement('div');
+            row.className = 'modal-row-ped';
+            row.innerHTML = `
+                <div class="drag-handle-ped"><i class="fas fa-grip-vertical"></i></div>
+                <div style="flex:1;">
+                    <div style="font-size:0.7rem; color:#999; margin-bottom:2px;">Originale: ${key}</div>
+                    <input type="text" class="ped-input-edit" value="${details.displayText || key}" data-key="${key}">
+                </div>
+            `;
+            mb.appendChild(row);
         });
-        if(sortableInstancePed) sortableInstancePed.destroy();
-        sortableInstancePed = new Sortable(modalBody, { animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost' });
+
+        if (sortableInstancePed) sortableInstancePed.destroy();
+        sortableInstancePed = new Sortable(mb, { animation: 150, handle: '.drag-handle-ped' });
+
         document.getElementById('edit-modal-ped').classList.add('active');
     }
-    function closeModalPed() { document.getElementById('edit-modal-ped').classList.remove('active'); currentEditLabelPed = null; }
+
+    window.closeModalPed = function() {
+        document.getElementById('edit-modal-ped').classList.remove('active');
+        currentEditLabelPed = null;
+    }
+
     document.getElementById('save-edits-btn-ped').addEventListener('click', () => {
-        if(!currentEditLabelPed) return;
-        const rows = document.getElementById('modal-body-ped').querySelectorAll('.modal-row');
-        rows.forEach((row, index) => { const input = row.querySelector('input'); const key = input.dataset.key; const newVal = input.value; if(globalProcessedDataPed[currentEditLabelPed].argomenti[key]) { globalProcessedDataPed[currentEditLabelPed].argomenti[key].displayText = newVal; globalProcessedDataPed[currentEditLabelPed].argomenti[key].customIndex = index; } });
-        const layoutStyle = document.querySelector('input[name="layout-style"]:checked').value;
-        const newSvg = generateSVGPed(currentEditLabelPed, globalProcessedDataPed[currentEditLabelPed], layoutStyle);
-        const container = document.getElementById(`svg-container-ped-${currentEditLabelPed.replace(/[^a-z0-9]/gi, '_')}`);
-        if(container) { container.innerHTML = newSvg; container.classList.add('ring-4', 'ring-green-400'); setTimeout(() => container.classList.remove('ring-4', 'ring-green-400'), 500); }
+        if (!currentEditLabelPed) return;
+        const rows = document.querySelectorAll('#modal-body-ped .modal-row-ped');
+        rows.forEach((row, index) => {
+            const input = row.querySelector('input');
+            const key = input.getAttribute('data-key');
+            const val = input.value;
+            if (globalProcessedDataPed[currentEditLabelPed].argomenti[key]) {
+                globalProcessedDataPed[currentEditLabelPed].argomenti[key].displayText = val;
+                globalProcessedDataPed[currentEditLabelPed].argomenti[key].customIndex = index;
+            }
+        });
+        displayResultsPed(globalProcessedDataPed); // Ridisegna
         closeModalPed();
+        showToast("Modifiche applicate!", "success");
     });
 
+    // 4. GENERATORE SVG
     function getSortedEntriesPed(data) {
         const entries = Object.entries(data.argomenti);
-        const hasCustomOrder = entries.some(([_, val]) => val.customIndex !== undefined);
-        if (hasCustomOrder) { return entries.sort((a, b) => { const idxA = a[1].customIndex !== undefined ? a[1].customIndex : 99999; const idxB = b[1].customIndex !== undefined ? b[1].customIndex : 99999; return idxA - idxB; }); }
-        const getPriority = (argomento) => { const argLower = (argomento || "").toLowerCase(); if (argLower.includes("lasco")) return 0; if (argLower.includes("del fante")) return 1; if (argLower.includes("rovere")) return 2; return 3; };
-        return entries.sort(([argA, detailsA], [argB, detailsB]) => { if (detailsA.isIstituzionale && !detailsB.isIstituzionale) return -1; if (!detailsA.isIstituzionale && detailsB.isIstituzionale) return 1; if (!detailsA.isIstituzionale) return detailsB.totalPosts - detailsA.totalPosts; const priorityA = getPriority(argA); const priorityB = getPriority(argB); if (priorityA !== priorityB) return priorityA - priorityB; return detailsB.totalPosts - detailsA.totalPosts; });
+        const hasCustom = entries.some(([_, v]) => v.customIndex !== undefined);
+        if (hasCustom) {
+            return entries.sort((a, b) => (a[1].customIndex ?? 9999) - (b[1].customIndex ?? 9999));
+        }
+        // Fallback Logic (Istituzionale prima, poi per volume)
+        return entries.sort(([kA, vA], [kB, vB]) => {
+            if (vA.isIstituzionale !== vB.isIstituzionale) return vA.isIstituzionale ? -1 : 1;
+            return vB.totalPosts - vA.totalPosts;
+        });
     }
 
-    function generateSVGPed(label, data, layoutStyle = 'con-loghi') {
-        const baseFontSize = parseInt(document.getElementById('ped-font-size-input').value) || 18;
-        const rowHeight = parseInt(document.getElementById('ped-line-height-input').value) || 28;
-        const argColWidth = 850; const flagColWidth = 30; const channelColWidth = 80; const totalColWidth = 100; const paddingX = 30;
-        const width = paddingX + argColWidth + (channelColWidth * CHANNELS_ORDER_PED.length) + totalColWidth + paddingX;
-        const headerHeight = 40; const paddingY = 25; const darkTextColor = '#101827'; const blueColor = '#0146bc';
-        const sortedArgomenti = getSortedEntriesPed(data);
-        const numArgomenti = sortedArgomenti.length;
-        const totalContentHeight = (numArgomenti * rowHeight);
-        const useColoredIcons = document.getElementById('ped-logo-color-toggle').checked;
-        let totalHeight; let svgContent = ''; let currentY = paddingY;
-        const escapeXML = (str) => str.replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','\'':'&apos;','"':'&quot;'}[c]));
+    function escapeXML(str) {
+        return str.replace(/[<>&'"]/g, c => {
+            switch(c) { case '<': return '&lt;'; case '>': return '&gt;'; case '&': return '&amp;'; case '\'': return '&apos;'; case '"': return '&quot;'; }
+        });
+    }
+
+    function generatePedSVG(label, data, layoutStyle, useColors) {
+        const fontSize = parseInt(document.getElementById('ped-font-size-input').value) || 18;
+        const rowH = parseInt(document.getElementById('ped-line-height-input').value) || 28;
+        
+        const argW = 850, flagW = 30, chanW = 80, totW = 100, padX = 30;
+        const width = padX + argW + (chanW * CHANNELS_ORDER_PED.length) + totW + padX;
+        
+        const sorted = getSortedEntriesPed(data);
+        const contentH = sorted.length * rowH;
+        
+        let headerH = 40, padY = 25, curY = padY;
+        let svgHtml = '';
+        const blue = '#0146bc', dark = '#101827';
 
         if (layoutStyle === 'senza-loghi') {
-            totalHeight = paddingY + headerHeight + totalContentHeight + paddingY;
-            const titleAndTotalsY = currentY + 20;
-            svgContent += `<text x="${paddingX}" y="${titleAndTotalsY}" font-size="${baseFontSize + 4}" font-weight="700" fill="${blueColor}" text-transform="uppercase" dominant-baseline="middle">${escapeXML(label.toUpperCase())}</text>`;
-            let globalChannelX = paddingX + argColWidth;
-            CHANNELS_ORDER_PED.forEach(channelName => { const count = data.channels[channelName] || 0; if(count > 0) { svgContent += `<text x="${globalChannelX + (channelColWidth/2)}" y="${titleAndTotalsY}" text-anchor="middle" font-size="${baseFontSize}" font-weight="400" fill="${blueColor}" dominant-baseline="middle">${count}</text>`; } globalChannelX += channelColWidth; });
-            svgContent += `<text x="${globalChannelX + (totalColWidth / 2)}" y="${titleAndTotalsY}" text-anchor="middle" font-size="${baseFontSize}" font-weight="700" fill="${blueColor}" dominant-baseline="middle">${data.totalPosts}</text>`;
-            svgContent += `<line x1="${paddingX}" y1="${currentY + 32}" x2="${width - paddingX}" y2="${currentY + 32}" stroke="${blueColor}" stroke-width="1.5"/>`;
-            currentY += headerHeight;
-        } else { 
-            const tableHeaderHeight = baseFontSize + 20; const footerHeight = baseFontSize + 30; const titleLineWidth = 500;
-            totalHeight = headerHeight + tableHeaderHeight + totalContentHeight + footerHeight + paddingY;
-            svgContent += `<text x="${paddingX}" y="${currentY + 20}" font-size="${baseFontSize + 4}" font-weight="700" fill="${blueColor}" text-transform="uppercase">${escapeXML(label.toUpperCase())}</text>`;
-            svgContent += `<line x1="${paddingX}" y1="${currentY + 32}" x2="${paddingX + titleLineWidth}" y2="${currentY + 32}" stroke="${blueColor}" stroke-width="1.5"/>`;
-            currentY += headerHeight;
-            let tableHeader = `<rect x="${paddingX}" y="${currentY}" width="${width - (2 * paddingX)}" height="${tableHeaderHeight}" fill="#f8f9fa" /><text x="${paddingX + 20}" y="${currentY + (tableHeaderHeight/2) + 6}" font-size="${baseFontSize + 2}" font-weight="400" fill="${blueColor}">Argomento</text>`;
-            let channelHeaderX = paddingX + argColWidth;
-            CHANNELS_ORDER_PED.forEach(channelName => { let iconFill = blueColor; if (useColoredIcons) iconFill = BRAND_COLORS_PED[channelName.toLowerCase()] || '#000000'; tableHeader += `<g transform="translate(${channelHeaderX + (channelColWidth / 2) - 11}, ${currentY + (tableHeaderHeight/2) - 11})"><path d="${ICON_PATHS_PED[channelName.toLowerCase()]}" fill="${iconFill}" transform="scale(1.1)"/></g>`; channelHeaderX += channelColWidth; });
-            tableHeader += `<text x="${channelHeaderX + (totalColWidth / 2)}" y="${currentY + (tableHeaderHeight/2) + 6}" font-size="${baseFontSize + 2}" font-weight="600" fill="${darkTextColor}" text-anchor="middle">Totale</text>`;
-            svgContent += tableHeader;
-            currentY += tableHeaderHeight;
+            const titleY = curY + 20;
+            svgHtml += `<text x="${padX}" y="${titleY}" font-size="${fontSize+4}" font-weight="700" fill="${blue}" text-transform="uppercase">${escapeXML(label)}</text>`;
+            
+            let cx = padX + argW;
+            CHANNELS_ORDER_PED.forEach(ch => {
+                const c = data.channels[ch] || 0;
+                if (c > 0) svgHtml += `<text x="${cx + chanW/2}" y="${titleY}" text-anchor="middle" font-size="${fontSize}" fill="${blue}">${c}</text>`;
+                cx += chanW;
+            });
+            svgHtml += `<text x="${cx + totW/2}" y="${titleY}" text-anchor="middle" font-weight="700" font-size="${fontSize}" fill="${blue}">${data.totalPosts}</text>`;
+            svgHtml += `<line x1="${padX}" y1="${curY+32}" x2="${width-padX}" y2="${curY+32}" stroke="${blue}" stroke-width="1.5"/>`;
+            curY += headerH;
+        } else {
+            const tblHeadH = fontSize + 20;
+            
+            svgHtml += `<text x="${padX}" y="${curY+20}" font-size="${fontSize+4}" font-weight="700" fill="${blue}" text-transform="uppercase">${escapeXML(label)}</text>`;
+            svgHtml += `<line x1="${padX}" y1="${curY+32}" x2="${padX+500}" y2="${curY+32}" stroke="${blue}" stroke-width="1.5"/>`;
+            curY += headerH;
+
+            // Table Header
+            svgHtml += `<rect x="${padX}" y="${curY}" width="${width-2*padX}" height="${tblHeadH}" fill="#f8f9fa"/>`;
+            svgHtml += `<text x="${padX+20}" y="${curY+tblHeadH/2+6}" font-size="${fontSize+2}" fill="${blue}">Argomento</text>`;
+            
+            let cx = padX + argW;
+            CHANNELS_ORDER_PED.forEach(ch => {
+                const col = useColors ? (BRAND_COLORS_PED[ch.toLowerCase()] || '#000') : blue;
+                svgHtml += `<g transform="translate(${cx+chanW/2-11}, ${curY+tblHeadH/2-11})"><path d="${ICON_PATHS_PED[ch.toLowerCase()]}" fill="${col}" transform="scale(1.1)"/></g>`;
+                cx += chanW;
+            });
+            svgHtml += `<text x="${cx+totW/2}" y="${curY+tblHeadH/2+6}" font-weight="600" text-anchor="middle" font-size="${fontSize+2}" fill="${dark}">Totale</text>`;
+            curY += tblHeadH;
         }
 
-        sortedArgomenti.forEach(([key, details], index) => {
-            const rowY = currentY + (index * rowHeight);
-            svgContent += `<line x1="${paddingX}" y1="${rowY + rowHeight}" x2="${width - paddingX}" y2="${rowY + rowHeight}" stroke="#e2e8f0" stroke-width="1.5"/>`;
-            const textToShow = details.displayText || key;
-            const maxArgLength = 95; const truncatedArgomento = textToShow.length > maxArgLength ? textToShow.substring(0, maxArgLength) + '...' : textToShow;
-            const textY = rowY + (rowHeight/2) + (baseFontSize/2.5);
-            let textX = paddingX + 20;
-            if (details.isIstituzionale) { svgContent += `<g transform="translate(${textX}, ${rowY + (rowHeight/2) - 9})"><path d="${ICON_PATHS_PED.flag}" fill="${blueColor}"/></g>`; textX += flagColWidth; }
-            svgContent += `<text x="${textX}" y="${textY}" font-size="${baseFontSize}" fill="${darkTextColor}">${escapeXML(truncatedArgomento)}</text>`;
-            let channelValueX = paddingX + argColWidth;
-            CHANNELS_ORDER_PED.forEach(channelName => { const count = details.channels[channelName] || 0; if (count > 0) { svgContent += `<text x="${channelValueX + (channelColWidth / 2)}" y="${textY}" text-anchor="middle" font-size="${baseFontSize}" fill="${darkTextColor}">${count}</text>`; } channelValueX += channelColWidth; });
-            svgContent += `<text x="${channelValueX + (totalColWidth / 2)}" y="${textY}" text-anchor="middle" font-size="${baseFontSize}" font-weight="700" fill="${blueColor}">${details.totalPosts}</text>`;
+        // Rows
+        sorted.forEach(([key, det], idx) => {
+            const rowY = curY + (idx * rowH);
+            svgHtml += `<line x1="${padX}" y1="${rowY+rowH}" x2="${width-padX}" y2="${rowY+rowH}" stroke="#e2e8f0" stroke-width="1.5"/>`;
+            
+            const txt = det.displayText || key;
+            const maxL = 95;
+            const trunc = txt.length > maxL ? txt.substring(0, maxL)+'...' : txt;
+            
+            let txtX = padX + 20;
+            const txtY = rowY + rowH/2 + fontSize/2.5;
+
+            if (det.isIstituzionale) {
+                svgHtml += `<g transform="translate(${txtX}, ${rowY+rowH/2-9})"><path d="${ICON_PATHS_PED.flag}" fill="${blue}"/></g>`;
+                txtX += flagW;
+            }
+            svgHtml += `<text x="${txtX}" y="${txtY}" font-size="${fontSize}" fill="${dark}">${escapeXML(trunc)}</text>`;
+
+            let cx = padX + argW;
+            CHANNELS_ORDER_PED.forEach(ch => {
+                const c = det.channels[ch] || 0;
+                if (c > 0) svgHtml += `<text x="${cx+chanW/2}" y="${txtY}" text-anchor="middle" font-size="${fontSize}" fill="${dark}">${c}</text>`;
+                cx += chanW;
+            });
+            svgHtml += `<text x="${cx+totW/2}" y="${txtY}" text-anchor="middle" font-weight="700" font-size="${fontSize}" fill="${blue}">${det.totalPosts}</text>`;
         });
 
-        if (layoutStyle === 'con-loghi') {
-            const footerHeight = baseFontSize + 30; const footerY = currentY + totalContentHeight;
-            svgContent += `<rect x="${paddingX}" y="${footerY}" width="${width - (2 * paddingX)}" height="${footerHeight}" fill="#f0f2f5" />`;
-            let globalChannelX = paddingX + argColWidth;
-            CHANNELS_ORDER_PED.forEach(channelName => { const count = data.channels[channelName] || 0; if(count > 0) { svgContent += `<text x="${globalChannelX + (channelColWidth/2)}" y="${footerY + (footerHeight/2) + 7}" text-anchor="middle" font-size="${baseFontSize+2}" font-weight="700" fill="${blueColor}">${count}</text>`; } globalChannelX += channelColWidth; });
-            svgContent += `<text x="${globalChannelX + (totalColWidth / 2)}" y="${footerY + (footerHeight/2) + 7}" text-anchor="middle" font-size="${baseFontSize+2}" font-weight="700" fill="${blueColor}">${data.totalPosts}</text>`;
+        // Footer (Only Con Loghi)
+        if (layoutStyle !== 'senza-loghi') {
+            const footH = fontSize + 30;
+            const footY = curY + contentH;
+            svgHtml += `<rect x="${padX}" y="${footY}" width="${width-2*padX}" height="${footH}" fill="#f0f2f5"/>`;
+            let cx = padX + argW;
+            CHANNELS_ORDER_PED.forEach(ch => {
+                const c = data.channels[ch] || 0;
+                if (c > 0) svgHtml += `<text x="${cx+chanW/2}" y="${footY+footH/2+7}" text-anchor="middle" font-weight="700" font-size="${fontSize+2}" fill="${blue}">${c}</text>`;
+                cx += chanW;
+            });
+            svgHtml += `<text x="${cx+totW/2}" y="${footY+footH/2+7}" text-anchor="middle" font-weight="700" font-size="${fontSize+2}" fill="${blue}">${data.totalPosts}</text>`;
+            curY = footY + footH + padY; 
+        } else {
+            curY += contentH + padY;
         }
-        return `<svg width="${width}" height="${totalHeight}" viewBox="0 0 ${width} ${totalHeight}" xmlns="http://www.w3.org/2000/svg" style="font-family: 'Nunito Sans', sans-serif;">${svgContent}</svg>`;
+
+        return `<svg width="${width}" height="${curY}" viewBox="0 0 ${width} ${curY}" xmlns="http://www.w3.org/2000/svg" style="font-family: 'Nunito Sans', sans-serif;">${svgHtml}</svg>`;
     }
 
-    async function downloadAllSVGPed(processedData) {
-        const button = document.getElementById('download-all-btn-ped'); const originalText = button.innerHTML; button.innerHTML = 'Creazione zip...'; button.disabled = true;
-        const zip = new JSZip(); const layoutStyle = document.querySelector('input[name="layout-style"]:checked').value;
-        for (const label in processedData) { const svgString = generateSVGPed(label, processedData[label], layoutStyle); zip.file(`riepilogo_${label.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.svg`, svgString); }
-        try { const content = await zip.generateAsync({ type: "blob" }); const url = URL.createObjectURL(content); const a = document.createElement('a'); a.href = url; a.download = 'report_social_ped.zip'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); } 
-        catch (error) { console.error(error); showToast("Errore ZIP", "error"); } finally { button.innerHTML = originalText; button.disabled = false; }
+    // 5. DOWNLOAD UTILS
+    window.downloadSinglePed = function(label) {
+        const svgEl = document.querySelector(`#ped-svg-${label.replace(/[^a-z0-9]/gi, '_')} svg`);
+        if (svgEl) downloadSvgDirect(svgEl, `Report_PED_${label}.svg`);
     }
 
-    window.downloadSinglePed = (label) => {
+    window.downloadAllPedZip = function() {
+        if (!globalProcessedDataPed || Object.keys(globalProcessedDataPed).length === 0) return;
+        const zip = new JSZip();
         const layoutStyle = document.querySelector('input[name="layout-style"]:checked').value;
-        const svgString = generateSVGPed(label, globalProcessedDataPed[label], layoutStyle);
-        const blob = new Blob([svgString], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `riepilogo_${label}.svg`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    };
+        const useColors = document.getElementById('ped-logo-color-toggle').checked;
+        
+        for (const label in globalProcessedDataPed) {
+            const svgStr = generatePedSVG(label, globalProcessedDataPed[label], layoutStyle, useColors);
+            zip.file(`${label}.svg`, svgStr);
+        }
+        
+        zip.generateAsync({type:"blob"}).then(content => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(content);
+            a.download = "Report_PED_Completo.zip";
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        });
+    }
   </script>
 </body>
 </html>
